@@ -14,17 +14,17 @@ struct ShareFlowView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    switch stage {
-                    case .preview, .ready: previewStage
-                    case .gate: ParentGateView { withAnimation { stage = .ready } } onCancel: { withAnimation { stage = .preview } }
-                    }
+            Group {
+                switch stage {
+                case .preview, .ready:
+                    previewStage
+                case .gate:
+                    ParentGateView { withAnimation { stage = .ready } } onCancel: { withAnimation { stage = .preview } }
                 }
-                .padding(20)
-                .frame(maxWidth: 640)
-                .frame(maxWidth: .infinity)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("share.viewport")
             .background(WhimsyBackground(colors: [Palette.cream, Palette.skyPastel.opacity(0.7)], density: 0.7))
             .navigationTitle("Share my collection")
             .navigationBarTitleDisplayMode(.inline)
@@ -37,8 +37,41 @@ struct ShareFlowView: View {
         .task { render() }
     }
 
-    @ViewBuilder
     private var previewStage: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 20) {
+                    posterPreview(maxHeight: min(520, geometry.size.height * 0.68))
+
+                    if let note = SharePoster.truncationNote(shown: featured.count, total: items.count) {
+                        Label("\(note). The picture fits up to \(SharePoster.maxItems) toys.", systemImage: "info.circle.fill")
+                            .font(.fun(.subheadline, weight: .semibold))
+                            .foregroundStyle(Palette.coralDeep)
+                            .accessibilityIdentifier("share.truncated")
+                    }
+
+                    Label("Only toy pictures and names go in. Your nickname and private notes stay out.", systemImage: "lock.shield.fill")
+                        .font(.fun(.subheadline, weight: .semibold))
+                        .foregroundStyle(Palette.grape)
+                        .multilineTextAlignment(.leading)
+                }
+                .padding(20)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                shareActions
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                    .frame(maxWidth: 640)
+                    .frame(maxWidth: .infinity)
+                    .background(.bar)
+            }
+        }
+    }
+
+    private func posterPreview(maxHeight: CGFloat) -> some View {
         Group {
             if let poster {
                 Image(uiImage: poster)
@@ -49,23 +82,14 @@ struct ShareFlowView: View {
                     .accessibilityLabel("Collection picture with \(featured.count) toys")
                     .accessibilityIdentifier("share.poster")
             } else {
-                ProgressView().frame(height: 300)
+                ProgressView().frame(height: min(300, maxHeight))
             }
         }
-        .frame(maxHeight: 520)
+        .frame(maxHeight: maxHeight)
+    }
 
-        if let note = SharePoster.truncationNote(shown: featured.count, total: items.count) {
-            Label("\(note). The picture fits up to \(SharePoster.maxItems) toys.", systemImage: "info.circle.fill")
-                .font(.fun(.subheadline, weight: .semibold))
-                .foregroundStyle(Palette.coralDeep)
-                .accessibilityIdentifier("share.truncated")
-        }
-
-        Label("Only toy pictures and names go in. Your nickname and private notes stay out.", systemImage: "lock.shield.fill")
-            .font(.fun(.subheadline, weight: .semibold))
-            .foregroundStyle(Palette.grape)
-            .multilineTextAlignment(.leading)
-
+    @ViewBuilder
+    private var shareActions: some View {
         if stage == .ready, let poster {
             VStack(spacing: 10) {
                 ShareLink(item: Image(uiImage: poster), preview: SharePreview("My squishy squad", image: Image(uiImage: poster))) {
@@ -185,19 +209,46 @@ struct ParentGateView: View {
     @State private var wrong = false
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 12) {
+            ViewThatFits(in: .vertical) {
+                fields(compact: false)
+                fields(compact: true)
+                ScrollView {
+                    fields(compact: true)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            actions
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: 420)
+        .padding(20)
+    }
+
+    private func fields(compact: Bool) -> some View {
+        let badgeSize: CGFloat = compact ? 56 : 84
+        return VStack(spacing: compact ? 10 : 18) {
             Image(systemName: "person.2.fill")
-                .font(.system(size: 40, weight: .bold))
+                .font(.system(size: compact ? 28 : 40, weight: .bold))
                 .foregroundStyle(Palette.grape)
-                .frame(width: 84, height: 84)
+                .frame(width: badgeSize, height: badgeSize)
                 .background(Circle().fill(Palette.lilac))
             Text("Grown-ups only")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text(wrong ? "Not quite — try a new one." : "To send this picture, a grown-up please answer:")
-                .font(.fun(.headline, weight: .semibold))
-                .foregroundStyle(wrong ? Palette.coralDeep : Palette.inkSoft)
-                .multilineTextAlignment(.center)
+            ZStack {
+                Text("To send this picture, a grown-up please answer:")
+                    .foregroundStyle(Palette.inkSoft)
+                    .opacity(wrong ? 0 : 1)
+                    .accessibilityHidden(wrong)
+                Text("Not quite — try a new one.")
+                    .foregroundStyle(Palette.coralDeep)
+                    .opacity(wrong ? 1 : 0)
+                    .accessibilityHidden(!wrong)
+            }
+            .font(.fun(.headline, weight: .semibold))
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             Text("What is \(Self.words[a]) times \(Self.words[b])?")
                 .font(.fun(.title2, weight: .heavy))
                 .foregroundStyle(Palette.grape)
@@ -206,36 +257,40 @@ struct ParentGateView: View {
             Text(entry.isEmpty ? " " : entry)
                 .font(.system(size: 40, weight: .black, design: .rounded))
                 .foregroundStyle(Palette.ink)
-                .frame(maxWidth: 220, minHeight: 64)
+                .frame(maxWidth: 220, minHeight: compact ? 54 : 64)
                 .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.white))
                 .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(wrong ? Palette.coralDeep : Palette.lilac, lineWidth: 3))
                 .accessibilityLabel("Answer \(entry)")
                 .accessibilityIdentifier("gate.entry")
-            keypad
-            HStack(spacing: 12) {
-                Button("Back", action: onCancel)
-                    .buttonStyle(.chunky(.white, shadow: Palette.lilac, foreground: Palette.grape))
-                    .accessibilityIdentifier("gate.cancel")
-                Button("Check", action: check)
-                    .buttonStyle(.chunky(Palette.grape, shadow: Palette.grapeDeep))
-                    .disabled(entry.isEmpty)
-                    .accessibilityIdentifier("gate.submit")
-            }
+            keypad(compact: compact)
         }
-        .frame(maxWidth: 420)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var keypad: some View {
+    private var actions: some View {
+        HStack(spacing: 12) {
+            Button("Back", action: onCancel)
+                .buttonStyle(.chunky(.white, shadow: Palette.lilac, foreground: Palette.grape))
+                .accessibilityIdentifier("gate.cancel")
+            Button("Check", action: check)
+                .buttonStyle(.chunky(Palette.grape, shadow: Palette.grapeDeep))
+                .disabled(entry.isEmpty)
+                .accessibilityIdentifier("gate.submit")
+        }
+    }
+
+    private func keypad(compact: Bool) -> some View {
         let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", ""]
-        return LazyVGrid(columns: Array(repeating: GridItem(.fixed(76), spacing: 12), count: 3), spacing: 12) {
+        let keyHeight: CGFloat = compact ? 48 : 60
+        return LazyVGrid(columns: Array(repeating: GridItem(.fixed(76), spacing: 12), count: 3), spacing: compact ? 8 : 12) {
             ForEach(Array(keys.enumerated()), id: \.offset) { _, key in
                 if key.isEmpty {
-                    Color.clear.frame(height: 60)
+                    Color.clear.frame(height: keyHeight)
                 } else {
                     Button {
                         if key == "⌫" { entry = String(entry.dropLast()) } else if entry.count < 3 { entry += key }
                     } label: {
-                        Text(key).font(.fun(.title2, weight: .heavy)).frame(width: 76, height: 60)
+                        Text(key).font(.fun(.title2, weight: .heavy)).frame(width: 76, height: keyHeight)
                             .foregroundStyle(Palette.ink)
                             .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white))
                             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Palette.lilac, lineWidth: 2))

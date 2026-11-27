@@ -114,6 +114,9 @@ private struct CritterPainter {
         case .popIt: paintPopIt()
         case .cube: paintCube()
         case .spinner: paintSpinner()
+        case .otherFidget:
+            fillStroke(circle(0.5, 0.53, 0.32))
+            fillStroke(circle(0.5, 0.53, 0.16), .color(.white.opacity(0.45)))
         default:
             paintSquishy()
             paintAccessory()

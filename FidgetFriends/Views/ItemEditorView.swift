@@ -11,27 +11,32 @@ struct ItemEditorView: View {
     @Environment(\.dismiss) private var dismiss
     let mode: Mode
 
+    @State private var original: CollectionItem
     @State private var draft: CollectionItem
     @State private var photoSelection: PhotosPickerItem?
     @State private var pickedPhoto: UIImage?
     @State private var removePhoto = false
     @State private var photoState: PhotoState = .idle
+    @State private var confirmingDiscard = false
 
     private enum PhotoState: Equatable { case idle, loading, failed(String) }
 
     init(mode: Mode) {
         self.mode = mode
+        let item: CollectionItem
         switch mode {
         case .add:
-            _draft = State(initialValue: CollectionItem(name: "", kind: .squishy, species: .blob, color: .bubblegum))
-        case .edit(let item):
-            _draft = State(initialValue: item)
+            item = CollectionItem(name: "", kind: .squishy, species: .blob, color: .bubblegum)
+        case .edit(let existing):
+            item = existing
         }
+        _original = State(initialValue: item)
+        _draft = State(initialValue: item)
     }
 
     /// Starter artwork shows only while the toy still has its original kind, look and color.
     private func syncStarterArt() {
-        guard case .edit(let original) = mode else { return }
+        guard isEditing else { return }
         let unchanged = draft.kind == original.kind && draft.species == original.species && draft.color == original.color
         draft.artName = unchanged ? original.artName : nil
     }
@@ -39,6 +44,10 @@ struct ItemEditorView: View {
     private var isEditing: Bool { if case .edit = mode { return true } else { return false } }
     private var canSave: Bool { !draft.name.trimmingCharacters(in: .whitespaces).isEmpty && photoState != .loading }
     private var speciesChoices: [CritterSpecies] { draft.kind == .squishy ? CritterSpecies.squishyChoices : CritterSpecies.fidgetChoices }
+    private var hasUnsavedChanges: Bool {
+        draft != original || pickedPhoto != nil || photoState == .loading ||
+            (removePhoto && original.photoFileName != nil)
+    }
 
     private var previewPhoto: UIImage? {
         if let pickedPhoto { return pickedPhoto }
@@ -96,11 +105,11 @@ struct ItemEditorView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .background(WhimsyBackground(colors: [Palette.cream, Palette.peachPastel.opacity(0.5)], density: 0.6))
-            .navigationTitle(isEditing ? "Edit toy" : "Add a squishy")
+            .navigationTitle(isEditing ? "Edit toy" : "Add a \(draft.kind.label.lowercased())")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }.font(.fun(.body)).accessibilityIdentifier("editor.cancel")
+                    Button("Cancel", action: cancel).font(.fun(.body)).accessibilityIdentifier("editor.cancel")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
@@ -125,6 +134,16 @@ struct ItemEditorView: View {
                 }
             }
         }
+        .background(SheetDismissObserver(isDirty: hasUnsavedChanges) { confirmingDiscard = true })
+        .interactiveDismissDisabled(hasUnsavedChanges)
+        .alert(isEditing ? "Throw away your changes?" : "Throw away this toy?", isPresented: $confirmingDiscard) {
+            Button("Keep editing", role: .cancel) {}
+            Button("Throw away", role: .destructive) { dismiss() }
+        }
+    }
+
+    private func cancel() {
+        if hasUnsavedChanges { confirmingDiscard = true } else { dismiss() }
     }
 
     private var previewCard: some View {
@@ -255,5 +274,62 @@ struct ItemEditorView: View {
         }
         if isEditing { store.update(item) } else { store.add(item) }
         dismiss()
+    }
+}
+
+private struct SheetDismissObserver: UIViewControllerRepresentable {
+    let isDirty: Bool
+    let onAttempt: () -> Void
+
+    func makeUIViewController(context: Context) -> Observer { Observer() }
+
+    func updateUIViewController(_ observer: Observer, context: Context) {
+        observer.isDirty = isDirty
+        observer.onAttempt = onAttempt
+        DispatchQueue.main.async { [weak observer] in observer?.observePresentation() }
+    }
+
+    final class Observer: UIViewController, UIAdaptivePresentationControllerDelegate {
+        var isDirty = false
+        var onAttempt: (() -> Void)?
+        private weak var previousDelegate: UIAdaptivePresentationControllerDelegate?
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            observePresentation()
+        }
+
+        func observePresentation() {
+            var candidate = parent
+            while let controller = candidate {
+                if let presentation = controller.presentationController,
+                   presentation.presentedViewController === controller {
+                    if presentation.delegate !== self {
+                        previousDelegate = presentation.delegate
+                        presentation.delegate = self
+                    }
+                    return
+                }
+                candidate = controller.parent
+            }
+        }
+
+        func presentationControllerShouldDismiss(_ presentationController: UIPresentationController) -> Bool {
+            !isDirty && (previousDelegate?.presentationControllerShouldDismiss?(presentationController) ?? true)
+        }
+
+        func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
+            if isDirty { onAttempt?() }
+            previousDelegate?.presentationControllerDidAttemptToDismiss?(presentationController)
+        }
+
+        override func responds(to selector: Selector!) -> Bool {
+            super.responds(to: selector) || previousDelegate?.responds(to: selector) == true
+        }
+
+        override func forwardingTarget(for selector: Selector!) -> Any? {
+            if previousDelegate?.responds(to: selector) == true { return previousDelegate }
+            return super.forwardingTarget(for: selector)
+        }
     }
 }

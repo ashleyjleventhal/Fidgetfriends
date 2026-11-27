@@ -95,7 +95,7 @@ struct ItemDetailContent: View {
             }
         }
         .sheet(isPresented: $editing) { ItemEditorView(mode: .edit(item)) }
-        .confirmationDialog("Remove \(item.name) from your shelf?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+        .alert("Remove \(item.name) from your shelf?", isPresented: $confirmingDelete) {
             Button("Remove", role: .destructive) {
                 store.delete(item.id)
                 onDelete()
