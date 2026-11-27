@@ -102,9 +102,9 @@ function ShareGate({ attempts, setAttempts, pass }: { attempts: ShareAttempts; s
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const now = Date.now();
-    if (attempts.lockedUntil > now) return;
+    if (attempts.lockedUntil > now || !answer.trim()) return;
     const product = question[0] * question[1];
-    if (answer.trim() && Number(answer) === product) {
+    if (Number(answer) === product) {
       setAttempts(noShareAttempts);
       pass();
       return;

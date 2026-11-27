@@ -118,6 +118,27 @@ test('clears a share error when a grown-up retries successfully', async ({ page 
   await expect(page.locator('body')).toHaveAttribute('data-share-finished', 'yes');
   await expect(dialog.getByRole('alert')).toHaveCount(0);
 });
+test('does not count blank grown-up answers or change the question', async ({ page }) => {
+  await start(page);
+  const dialog = await openShare(page);
+  const question = dialog.getByText(/Grown-ups: what is/);
+  const input = dialog.getByRole('textbox');
+  const submit = dialog.getByRole('button', { name: 'Make collection picture' });
+  const initial = await question.textContent();
+  for (const blank of ['', ' ', '']) {
+    await input.fill(blank);
+    await submit.click();
+    await expect(question).toHaveText(initial!);
+    await expect(dialog.getByRole('alert')).toHaveCount(0);
+    await expect(submit).toBeEnabled();
+  }
+  for (let miss = 0; miss < 2; miss++) {
+    await input.fill('0');
+    await submit.click();
+    await expect(submit).toBeEnabled();
+  }
+  await makePicture(page);
+});
 test('locks the grown-up gate for 30 seconds after three wrong answers', async ({ page }) => {
   const now = new Date('2026-01-01T12:00:00Z');
   await page.clock.install({ time: now });
