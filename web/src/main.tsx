@@ -59,25 +59,93 @@ function ItemEditor({ initial, save, busy }: { initial?: Item; save: (i: Item) =
     <button className="button primary full" disabled={busy || photoBusy}>{busy ? 'Saving…' : initial ? 'Save changes' : 'Add to my shelf'}<Icon name="check"/></button>
   </form>;
 }
-function ShareCollection({ items }: { items: Item[] }) {
-  const [passed, setPassed] = useState(false), [answer, setAnswer] = useState(''), [wrong, setWrong] = useState(false);
-  const [question, setQuestion] = useState(() => [3 + Math.floor(Math.random() * 7), 3 + Math.floor(Math.random() * 7)]);
-  const [page, setPage] = useState(0), [picture, setPicture] = useState<{ blob: Blob; url: string } | null>(null), [error, setError] = useState('');
+function canSharePicture(file: File) {
+  try {
+    return typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] }) === true;
+  } catch {
+    return false;
+  }
+}
+function ShareActions({ picture }: { picture: { file: File; url: string } }) {
+  const [error, setError] = useState('');
+  const canShare = canSharePicture(picture.file);
+  async function share() {
+    setError('');
+    try {
+      await navigator.share({ files: [picture.file], title: 'My happy collection' });
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') setError('Sharing is unavailable here. Use Save picture instead.');
+    }
+  }
+  return <>{error && <p className="error" role="alert">{error}</p>}<div className="share-actions">
+    {canShare && <button className="button primary full" onClick={share}><Icon name="share"/>Share picture</button>}
+    <a className={`button ${canShare ? 'secondary' : 'primary'} full`} href={picture.url} download={picture.file.name}><Icon name="download"/>Save picture</a>
+    <p className="small muted">On iPad or iPhone, you can also touch and hold the picture, then choose Save to Photos.</p>
+  </div></>;
+}
+type ShareAttempts = { wrong: number; lockedUntil: number };
+const noShareAttempts: ShareAttempts = { wrong: 0, lockedUntil: 0 };
+const shareCooldown = 30_000;
+function nextShareQuestion(previousProduct?: number) {
+  const a = 3 + Math.floor(Math.random() * 7), b = 3 + Math.floor(Math.random() * 7);
+  return [a * b === previousProduct ? (a === 9 ? 3 : a + 1) : a, b];
+}
+function ShareGate({ attempts, setAttempts, pass }: { attempts: ShareAttempts; setAttempts: (value: ShareAttempts) => void; pass: () => void }) {
+  const [answer, setAnswer] = useState(''), [wrong, setWrong] = useState(false);
+  const [question, setQuestion] = useState(() => nextShareQuestion());
+  const locked = attempts.lockedUntil > Date.now();
+  useEffect(() => {
+    if (!attempts.lockedUntil) return;
+    const timer = window.setTimeout(() => setAttempts(noShareAttempts), Math.max(0, attempts.lockedUntil - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [attempts.lockedUntil, setAttempts]);
+  function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const now = Date.now();
+    if (attempts.lockedUntil > now) return;
+    const product = question[0] * question[1];
+    if (answer.trim() && Number(answer) === product) {
+      setAttempts(noShareAttempts);
+      pass();
+      return;
+    }
+    const misses = (attempts.lockedUntil ? 0 : attempts.wrong) + 1;
+    setAttempts({ wrong: misses, lockedUntil: misses === 3 ? now + shareCooldown : 0 });
+    setWrong(misses < 3);
+    setAnswer('');
+    setQuestion(nextShareQuestion(product));
+  }
+  return <div className="gate"><div className="gate-icon"><Icon name="lock" size={34}/></div><h3>A little help from a grown-up</h3><p>Ask a grown-up before making a picture to share outside Fidget Friends.</p><p className="small muted">Toy names and drawings appear in the picture. Nickname, notes, and photos stay private. Please check toy names for personal information.</p>
+    <form onSubmit={submit}>
+      <label>Grown-ups: what is {question[0]} × {question[1]}?<input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={3} value={answer} onChange={e => setAnswer(e.target.value)} autoComplete="off" disabled={locked}/></label>
+      {locked ? <p role="status">Let’s take a little pause. Grown-ups, please wait 30 seconds before trying again.</p> : wrong && <p className="error" role="alert">Not quite. Ask a grown-up to try this new question.</p>}
+      <button className="button primary full" disabled={locked}>Make collection picture<Icon name="sparkle"/></button>
+    </form>
+  </div>;
+}
+function ShareCollection({ items, attempts, setAttempts }: { items: Item[]; attempts: ShareAttempts; setAttempts: (value: ShareAttempts) => void }) {
+  const [passed, setPassed] = useState(false);
+  const [page, setPage] = useState(0), [picture, setPicture] = useState<{ file: File; url: string } | null>(null), [error, setError] = useState('');
   useEffect(() => {
     if (!passed) return;
     let active = true, url = ''; setPicture(null); setError('');
-    makePoster(items, page).then(blob => { if (active) { url = URL.createObjectURL(blob); setPicture({ blob, url }); } }).catch(() => { if (active) setError('The picture could not be made. Close this and try again.'); });
+    makePoster(items, page).then(blob => {
+      if (!active) return;
+      const file = new File([blob], `fidget-friends-${page + 1}.png`, { type: 'image/png' });
+      url = URL.createObjectURL(file); setPicture({ file, url });
+    }).catch(() => { if (active) setError('The picture could not be made. Close this and try again.'); });
     return () => { active = false; if (url) URL.revokeObjectURL(url); };
   }, [passed, items, page]);
-  if (!passed) return <div className="gate"><div className="gate-icon"><Icon name="lock" size={34}/></div><h3>A little help from a grown-up</h3><p>Ask a grown-up before making a picture to share outside Fidget Friends.</p><p className="small muted">Toy names and drawings appear in the picture. Nickname, notes, and photos stay private. Please check toy names for personal information.</p><form onSubmit={e => { e.preventDefault(); if (Number(answer) === question[0] * question[1] && answer.trim()) setPassed(true); else { setWrong(true); setAnswer(''); setQuestion([3 + Math.floor(Math.random()*7), 3 + Math.floor(Math.random()*7)]); } }}><label>Grown-ups: what is {question[0]} × {question[1]}?<input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={3} value={answer} onChange={e => setAnswer(e.target.value)} autoComplete="off"/></label>{wrong && <p className="error" role="alert">Not quite. Ask a grown-up to try this new question.</p>}<button className="button primary full">Make collection picture<Icon name="sparkle"/></button></form></div>;
+  if (!passed) return <ShareGate attempts={attempts} setAttempts={setAttempts} pass={() => setPassed(true)}/>;
   const pages = Math.ceil(items.length / perPage);
-  return <div className="share-preview"><p className="muted">Just the toy names and drawings. No nickname, notes, or photos.</p>{error && <p className="error" role="alert">{error}</p>}{picture ? <img src={picture.url} alt={`Collection picture, page ${page + 1} of ${pages}`}/> : !error && <p role="status">Making a little shelf magic…</p>}{pages > 1 && <div className="pager"><button className="button secondary" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page + 1} of {pages}</span><button className="button secondary" disabled={page === pages-1} onClick={() => setPage(page + 1)}>Next</button></div>}{picture && <div className="share-actions"><button className="button primary full" onClick={async () => { const file = new File([picture.blob], `fidget-friends-${page+1}.png`, { type: 'image/png' }); try { if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: 'My happy collection' }); else setError('Use Save picture below, or touch and hold the picture to save it.'); } catch (e) { if ((e as Error).name !== 'AbortError') setError('Sharing is unavailable here. Use Save picture instead.'); } }}><Icon name="share"/>Share picture</button><a className="button secondary full" href={picture.url} download={`fidget-friends-${page+1}.png`}><Icon name="download"/>Save picture</a><p className="small muted">On iPad or iPhone, you can also touch and hold the picture, then choose Save to Photos.</p></div>}</div>;
+  return <div className="share-preview"><p className="muted">Just the toy names and drawings. No nickname, notes, or photos.</p>{error && <p className="error" role="alert">{error}</p>}{picture ? <img src={picture.url} alt={`Collection picture, page ${page + 1} of ${pages}`}/> : !error && <p role="status">Making a little shelf magic…</p>}{pages > 1 && <div className="pager"><button className="button secondary" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page + 1} of {pages}</span><button className="button secondary" disabled={page === pages-1} onClick={() => setPage(page + 1)}>Next</button></div>}{picture && <ShareActions key={picture.url} picture={picture}/>}</div>;
 }
 function App() {
   const [data, setData] = useState<Collection>(emptyCollection), [loading, setLoading] = useState(true), [loadError, setLoadError] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [toast, setToast] = useState('');
   const [filter, setFilter] = useState<Filter>('all'), [query, setQuery] = useState('');
   const [modal, setModal] = useState<'onboard' | 'buddy' | 'add' | 'edit' | 'detail' | 'share' | 'info' | 'delete' | null>(null), [selected, setSelected] = useState<Item | null>(null);
+  const [shareAttempts, setShareAttempts] = useState(noShareAttempts);
   const saveLock = useRef(false);
   useEffect(() => { loadCollection().then(c => { setData(c); if (!c.profile) setModal('onboard'); }).catch(() => setLoadError('We couldn’t open storage on this device. Your saved data has not been changed. Close other tabs, leave Private Browsing, then reload to try again.')).finally(() => setLoading(false)); }, []);
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 3200); return () => clearTimeout(timer); }, [toast]);
@@ -107,7 +175,7 @@ function App() {
       {(modal === 'add' || modal === 'edit') && <ItemEditor initial={modal === 'edit' ? selected ?? undefined : undefined} busy={busy} save={item => void commit({ ...data, items: modal === 'edit' ? data.items.map(i => i.id === item.id ? item : i) : [...data.items, item] }, modal === 'edit' ? 'Little makeover saved!' : 'A new friend on your shelf!')}/>}
       {modal === 'detail' && selected && <div className="detail"><div className="detail-art" style={{ background: colors[selected.color][2] }}>{selected.photo ? <img src={selected.photo} alt={selected.name}/> : <Critter species={selected.species} color={selected.color}/>}</div><p className="eyebrow">{selected.kind} · {species[selected.species]}</p><div className="toy-tags">{selected.tags.map(t => <span key={t}>{t}</span>)}</div>{selected.notes && <div className="private-notes"><span><Icon name="lock" size={14}/>Private little notes</span><p>{selected.notes}</p></div>}<button className="button primary full" onClick={() => setModal('edit')}><Icon name="edit" size={18}/>Edit little friend</button><button className="text-button danger" onClick={() => setModal('delete')}>Remove from my shelf</button></div>}
       {modal === 'delete' && selected && <div className="detail"><p>Remove <strong>{selected.name}</strong> from your shelf? Their photo and notes will be removed too. This can’t be undone.</p><div className="form-columns"><button className="button secondary" onClick={() => setModal('detail')}>Keep my friend</button><button disabled={busy} className="button danger-button" onClick={() => void commit({ ...data, items: data.items.filter(i => i.id !== selected.id) }, 'Little friend removed')}>Remove friend</button></div></div>}
-      {modal === 'share' && <ShareCollection items={data.items}/>}
+      {modal === 'share' && <ShareCollection items={data.items} attempts={shareAttempts} setAttempts={setShareAttempts}/>}
       {modal === 'info' && <div className="info-content"><div className="info-callout"><Icon name="lock" size={27}/><h3>Just yours. Right here.</h3><p>Your buddy, collection, photos and notes stay in this browser on this device. No account, ads, tracking, or social feed.</p></div><h3>Put your shelf on your home screen</h3><ol><li>Open this link in <strong>Safari</strong> on your iPhone or iPad.</li><li>Tap Safari’s <strong>Share</strong> button <Icon name="share" size={16}/>.</li><li>Choose <strong>Add to Home Screen</strong>, then <strong>Add</strong>.</li></ol><p className="small muted">Your home-screen shelf may have separate storage from your Safari tab. Start your collection in the place you’ll use it. Keep using the same device and browser.</p><h3>A little note for grown-ups</h3><p>Collections don’t sync between devices or with the native iOS app. Clearing website data, removing the home-screen app, or using Private Browsing can erase a collection. This first web version needs an internet connection to open.</p><p>Sharing asks for a grown-up’s help. Only toy names and drawings go into the picture—not your nickname, notes, buddy’s name, or photos. The math check is a speed bump, not age verification.</p><p className="small muted">The website host receives normal requests to load the app. Collection data is never uploaded.</p></div>}
     </Modal>}
   </>;
