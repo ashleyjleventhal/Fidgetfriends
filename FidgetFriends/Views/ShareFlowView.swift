@@ -94,7 +94,7 @@ struct ShareFlowView: View {
     private func render() {
         guard poster == nil else { return }
         let photos = Dictionary(uniqueKeysWithValues: featured.compactMap { item in store.image(for: item).map { (item.id, $0) } })
-        let renderer = ImageRenderer(content: SharePoster(items: featured, totalCount: items.count, photos: photos, look: store.profile?.look))
+        let renderer = ImageRenderer(content: SharePoster(items: featured, totalCount: items.count, photos: photos))
         renderer.scale = max(displayScale, 2)
         poster = renderer.uiImage
     }
@@ -107,7 +107,6 @@ struct SharePoster: View {
     let items: [CollectionItem]
     let totalCount: Int
     let photos: [UUID: UIImage]
-    let look: CharacterLook?
 
     static func truncationNote(shown: Int, total: Int) -> String? {
         shown < total ? "Showing \(shown) of \(total) · favorites first" : nil
@@ -138,9 +137,6 @@ struct SharePoster: View {
                         }
                     }
                     Spacer(minLength: 0)
-                    if let look {
-                        CritterView(look: look, showsShadow: false).frame(width: 96, height: 96)
-                    }
                 }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                     ForEach(items) { item in

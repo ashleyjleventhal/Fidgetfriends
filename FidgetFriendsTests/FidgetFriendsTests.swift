@@ -74,7 +74,7 @@ final class FidgetFriendsTests: XCTestCase {
     }
 
     func testPosterRendersOnDevice() throws {
-        let poster = SharePoster(items: CollectionItem.samples, totalCount: CollectionItem.samples.count, photos: [:], look: CharacterLook())
+        let poster = SharePoster(items: CollectionItem.samples, totalCount: CollectionItem.samples.count, photos: [:])
         let renderer = ImageRenderer(content: poster)
         renderer.scale = 2
         let image = try XCTUnwrap(renderer.uiImage)
