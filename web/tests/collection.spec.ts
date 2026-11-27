@@ -150,6 +150,12 @@ test('keeps buddy and toy drafts usable across iPad layout changes', async ({ pa
 });
 
 test('keeps navigation, dialogs and poster actions inside available space', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperties(navigator, {
+      canShare: { value: () => true },
+      share: { value: async () => {} },
+    });
+  });
   await page.setViewportSize({ width: 320, height: 834 });
   await start(page);
   await page.addStyleTag({ content: ':root { --safe-top: 24px; --safe-right: 16px; --safe-bottom: 20px; --safe-left: 24px; }' });
@@ -163,11 +169,24 @@ test('keeps navigation, dialogs and poster actions inside available space', asyn
   await dialog.getByRole('textbox').fill(String(Number(question[1]) * Number(question[2])));
   await dialog.getByRole('button', { name: 'Make collection picture' }).click();
   await expect(dialog.getByRole('img', { name: /Collection picture/ })).toBeVisible();
+  const poster = dialog.getByRole('region', { name: 'Scrollable collection picture' });
+  expect(await poster.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true);
+  expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   await page.setViewportSize({ width: 1194, height: 500 });
   const bounds = (await dialog.boundingBox())!;
   expect(bounds.y).toBeGreaterThanOrEqual(24);
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(480);
   expect(await dialog.evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+  const size = await poster.getByRole('img').evaluate((image: HTMLImageElement) => ({
+    width: image.getBoundingClientRect().width, height: image.getBoundingClientRect().height,
+  }));
+  expect(size.width).toBeGreaterThanOrEqual(560);
+  expect(size.height).toBeGreaterThan((await poster.boundingBox())!.height);
+  expect(await poster.evaluate(el => {
+    el.scrollTop = el.scrollHeight;
+    return el.scrollTop;
+  })).toBeGreaterThan(0);
+  await expect(dialog.getByRole('button', { name: 'Share picture' })).toBeInViewport();
   await expect(dialog.getByRole('link', { name: 'Save picture' })).toBeInViewport();
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   const sidebar = page.locator('.sidebar');
