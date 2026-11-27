@@ -10,7 +10,7 @@ import { Critter } from './Critter';
 import { Icon } from './Icons';
 import { buddySpecies, colors, defaultLook, emptyCollection, fidgetSpecies, filteredItems, newItem, sampleItems, species, tags } from './model';
 import type { Collection, Color, Filter, Item, Look, Profile, Species } from './model';
-import { loadCollection, resizePhoto, saveCollection } from './storage';
+import { loadCollection, resizePhoto, saveCollection, StorageConflictError } from './storage';
 import { makePoster, perPage } from './poster';
 
 function Modal({ title, close, children, wide = false }: { title: string; close: () => void; children: React.ReactNode; wide?: boolean }) {
@@ -83,7 +83,7 @@ function App() {
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 3200); return () => clearTimeout(timer); }, [toast]);
   async function commit(next: Collection, message: string, close = true) {
     if (saveLock.current) return false; saveLock.current = true; setBusy(true); setError('');
-    try { await saveCollection(next); setData(next); setToast(message); if (close) setModal(null); return true; } catch { setError('Your change wasn’t saved. This device may be out of space. Keep this window open and try again after freeing some space.'); return false; } finally { setBusy(false); saveLock.current = false; }
+    try { await saveCollection(next, data); setData(next); setToast(message); if (close) setModal(null); return true; } catch (error) { setError(error instanceof StorageConflictError ? error.message : 'Your change wasn’t saved. This device may be out of space. Keep this window open and try again after freeing some space.'); return false; } finally { setBusy(false); saveLock.current = false; }
   }
   function close() { if (busy || modal === 'onboard') return; if ((modal === 'edit' || modal === 'add' || modal === 'buddy') && !window.confirm('Leave without saving your changes?')) return; setModal(null); setError(''); }
   const profile = data.profile ?? { nickname: '', buddyName: 'Pip', look: defaultLook };

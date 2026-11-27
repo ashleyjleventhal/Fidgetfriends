@@ -18,14 +18,24 @@ export async function loadCollection(): Promise<Collection> {
     request.onerror = () => reject(request.error);
   }); } finally { db.close(); }
 }
-export async function saveCollection(data: Collection): Promise<void> {
+export class StorageConflictError extends Error {}
+export async function saveCollection(data: Collection, expected: Collection): Promise<void> {
+  if (!isCollection(data)) throw new Error('This collection cannot be saved.');
   const db = await openDB();
   try { await new Promise<void>((resolve, reject) => {
     const transaction = db.transaction('collection', 'readwrite');
-    transaction.objectStore('collection').put(data, 'current');
+    const store = transaction.objectStore('collection');
+    const read = store.get('current');
+    let conflict = false;
+    read.onsuccess = () => {
+      // Read and compare within the same read/write transaction, serialized across tabs.
+      if (JSON.stringify(read.result ?? emptyCollection) !== JSON.stringify(expected)) {
+        conflict = true; transaction.abort();
+      } else store.put(data, 'current');
+    };
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () => reject(transaction.error);
+    transaction.onabort = () => reject(conflict ? new StorageConflictError('Your shelf changed in another tab. Reload this tab before making more changes. This change has not been saved.') : transaction.error);
   }); } finally { db.close(); }
 }
 export async function resizePhoto(file: File): Promise<string> {
