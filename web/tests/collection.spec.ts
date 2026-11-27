@@ -16,6 +16,7 @@ test('sets up a buddy, adds/edits/deletes toys and persists across reloads', asy
   await page.getByLabel('Private little notes').fill('PRIVATE NOTE');
   await page.getByRole('button', { name: 'Soft', exact: true }).click();
   await page.getByRole('button', { name: 'Add to my shelf' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.reload();
   await expect(page.getByRole('button', { name: 'View Cloud Nine' })).toBeVisible();
   await page.getByRole('button', { name: 'Favorite Cloud Nine', exact: true }).click();
@@ -65,4 +66,34 @@ test('has no horizontal overflow and loads no third-party resources', async ({ p
   await page.getByRole('searchbox').fill('no such friend');
   await expect(page.getByRole('heading', { name: 'No little friends found' })).toBeVisible();
   expect(external).toEqual([]);
+});
+test('a stale second tab cannot erase a newly added friend', async ({ page, context }) => {
+  await start(page, false);
+  const other = await context.newPage();
+  await other.goto('/');
+  await expect(other.getByRole('heading', { name: 'Your first little joy goes here' })).toBeVisible();
+  await page.getByRole('button', { name: 'Add my first friend' }).click();
+  await page.getByLabel('Toy name').fill('Keep me');
+  await page.getByRole('button', { name: 'Add to my shelf' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await other.getByRole('button', { name: 'Add my first friend' }).click();
+  await other.getByLabel('Toy name').fill('Stale addition');
+  await other.getByRole('button', { name: 'Add to my shelf' }).click();
+  await expect(other.getByRole('dialog').getByRole('alert')).toContainText('changed in another tab');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'View Keep me' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'View Stale addition' })).toHaveCount(0);
+});
+test('an extremely narrow local photo stays valid after reload', async ({ page }) => {
+  await start(page, false);
+  await page.getByRole('button', { name: 'Add my first friend' }).click();
+  await page.getByLabel('Toy name').fill('Tiny photo');
+  const image = await page.evaluate(() => { const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 3000; const ctx = canvas.getContext('2d')!; ctx.fillStyle = '#ffaaaa'; ctx.fillRect(0, 0, 1, 3000); return canvas.toDataURL('image/png').split(',')[1]; });
+  await page.locator('input[type=file]').setInputFiles({ name: 'narrow.png', mimeType: 'image/png', buffer: Buffer.from(image, 'base64') });
+  await expect(page.getByRole('img', { name: 'Your toy preview' })).toBeVisible();
+  await page.getByRole('button', { name: 'Add to my shelf' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'View Tiny photo' }).click();
+  await expect(page.getByRole('dialog').getByRole('img', { name: 'Tiny photo' })).toBeVisible();
 });
