@@ -55,6 +55,7 @@ struct ItemEditorView: View {
                             ForEach(ItemKind.allCases) { kind in
                                 FunChip(title: kind.label, systemImage: kind == .squishy ? "cloud.fill" : "circle.grid.3x3.fill", isOn: draft.kind == kind,
                                         color: kind == .squishy ? Palette.coralDeep : Palette.skyDeep) {
+                                    if draft.kind != kind { draft.artName = nil }
                                     draft.kind = kind
                                     if !speciesChoices.contains(draft.species) { draft.species = speciesChoices[0] }
                                 }
