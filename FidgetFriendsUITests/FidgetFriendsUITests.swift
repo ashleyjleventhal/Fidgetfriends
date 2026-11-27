@@ -136,6 +136,31 @@ final class FidgetFriendsUITests: XCTestCase {
         screenshot("11-system-share-sheet")
     }
 
+    func testShareAndGrownUpActionsFitWithoutScrollingInPortrait() {
+        XCUIDevice.shared.orientation = .portrait
+        launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
+        tap("shelf.share")
+        XCTAssertTrue(element("share.poster").waitForExistence(timeout: 5))
+        let ask = element("share.continue")
+        let viewport = element("share.viewport")
+        XCTAssertTrue(ask.isHittable)
+        XCTAssertTrue(viewport.frame.contains(ask.frame), "Ask a grown-up should fit inside the sheet")
+        ask.tap()
+
+        XCTAssertTrue(element("gate.question").waitForExistence(timeout: 5))
+        let zero = element("gate.key.0")
+        XCTAssertTrue(zero.isHittable, "The last row of the keypad should be reachable without scrolling")
+        zero.tap()
+        for id in ["gate.cancel", "gate.submit"] {
+            let button = element(id)
+            XCTAssertTrue(button.isHittable, "\(id) should be hittable without scrolling")
+            XCTAssertTrue(app.frame.contains(button.frame), "\(id) should fit inside the window")
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                XCTAssertTrue(viewport.frame.contains(button.frame), "\(id) should fit inside the sheet")
+            }
+        }
+    }
+
     func testAllFiltersAreVisibleAndFavoritesCanBeSelected() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
         XCTAssertTrue(element("filter.all").waitForExistence(timeout: 5))
