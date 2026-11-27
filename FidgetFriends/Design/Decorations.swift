@@ -34,6 +34,7 @@ struct WhimsyBackground: View {
         GeometryReader { geo in
             ZStack {
                 LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
+                    .background(Palette.cream)
                 ForEach(Array(Self.confetti.enumerated()), id: \.offset) { _, c in
                     shape(for: c)
                         .frame(width: c.size, height: c.size)

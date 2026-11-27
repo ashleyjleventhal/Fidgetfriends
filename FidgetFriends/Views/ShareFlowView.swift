@@ -105,7 +105,7 @@ struct ShareFlowView: View {
         Button { withAnimation { showingGate = true } } label: {
             Label("Ask a grown-up to send it", systemImage: "person.2.fill")
         }
-        .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep))
+        .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep, foreground: Palette.ink))
         .disabled(poster == nil)
         .accessibilityIdentifier("share.continue")
     }
@@ -263,6 +263,7 @@ struct SharePoster: View {
 
 /// A grown-up check before anything leaves the app. This is a speed bump for young kids, not legal consent.
 struct ParentGateView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var onPass: () -> Void
     var onCancel: () -> Void
 
@@ -297,6 +298,7 @@ struct ParentGateView: View {
                 .foregroundStyle(Palette.grape)
                 .frame(width: badgeSize, height: badgeSize)
                 .background(Circle().fill(Palette.lilac))
+                .accessibilityHidden(true)
             Text("Grown-ups only")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)

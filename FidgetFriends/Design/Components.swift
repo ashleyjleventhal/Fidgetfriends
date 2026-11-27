@@ -69,7 +69,8 @@ struct FunTextField: View {
     var maxLength = 24
 
     var body: some View {
-        TextField(placeholder, text: $text)
+        TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkSoft))
+            .accessibilityLabel(placeholder)
             .font(.fun(.title3))
             .foregroundStyle(Palette.ink)
             .padding(.horizontal, 18)
@@ -88,9 +89,12 @@ struct SearchField: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass").foregroundStyle(Palette.grape)
-            TextField("Find a squishy or fidget", text: $text)
+                .accessibilityHidden(true)
+            TextField("Find a squishy or fidget", text: $text,
+                      prompt: Text("Find a squishy or fidget").foregroundStyle(Palette.inkSoft))
                 .font(.fun(.body, weight: .semibold))
                 .foregroundStyle(Palette.ink)
+                .accessibilityLabel("Find a squishy or fidget")
                 .submitLabel(.search)
                 .accessibilityIdentifier("shelf.search")
             if !text.isEmpty {
