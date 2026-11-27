@@ -299,6 +299,24 @@ final class FidgetFriendsUITests: XCTestCase {
         paste.tap()
     }
 
+    func testReturnInsideShortToyNameDoesNotChangeSavedName() {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding"])
+        tap("shelf.add")
+        tap("editor.name")
+        let name = element("editor.name")
+        let original = "SquishyBunny"
+        name.typeText(original)
+        XCTAssertEqual(name.value as? String, original)
+
+        for _ in "Bunny" {
+            name.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
+        }
+        name.typeText("\n")
+        XCTAssertEqual(name.value as? String, original)
+        tap("editor.save")
+        XCTAssertTrue(element("item.card.\(original)").waitForExistence(timeout: 5))
+    }
+
     func testReturnInsideFullToyNameDoesNotChangeSavedName() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding",
                 "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])

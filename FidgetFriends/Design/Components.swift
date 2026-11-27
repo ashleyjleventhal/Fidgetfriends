@@ -82,11 +82,9 @@ struct FunTextField: View {
             .onChange(of: text) { oldValue, newValue in
                 let name: String
                 if axis == .vertical, newValue.contains(where: \.isNewline) {
-                    if oldValue.count == maxLength, newValue.filter({ !$0.isNewline }) == oldValue {
-                        name = oldValue
-                    } else {
-                        name = newValue.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-                    }
+                    name = newValue.filter { !$0.isNewline } == oldValue
+                        ? oldValue
+                        : newValue.split(whereSeparator: \.isWhitespace).joined(separator: " ")
                 } else {
                     name = newValue
                 }
