@@ -6,10 +6,10 @@ struct ShelfScreen: View {
     let favoritesOnly: Bool
     /// When set (wide iPad), tapping a toy selects it for the side panel instead of pushing a page.
     var selection: Binding<UUID?>?
+    let onAddToy: () -> Void
 
     @State private var filter: CollectionFilter = .all
     @State private var search = ""
-    @State private var showingEditor = false
     @State private var showingShare = false
 
     private var activeFilter: CollectionFilter { favoritesOnly ? .faves : filter }
@@ -40,7 +40,6 @@ struct ShelfScreen: View {
         .safeAreaInset(edge: .bottom) { bottomButtons }
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(for: UUID.self) { id in ItemDetailScreen(itemID: id) }
-        .sheet(isPresented: $showingEditor) { ItemEditorView(mode: .add) }
         .sheet(isPresented: $showingShare) { ShareFlowView(items: store.items) }
     }
 
@@ -165,7 +164,7 @@ struct ShelfScreen: View {
     }
 
     private var addButton: some View {
-        Button { showingEditor = true } label: {
+        Button(action: onAddToy) {
             Label("Add toy", systemImage: "plus").lineLimit(1).fixedSize()
         }
         .buttonStyle(.chunky(.white, shadow: Palette.lilac, foreground: Palette.grape, compact: true))
