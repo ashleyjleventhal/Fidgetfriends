@@ -144,6 +144,28 @@ final class FidgetFriendsUITests: XCTestCase {
         screenshot("06-after-relaunch")
     }
 
+    func testClearingCustomBuddyNameRestoresDefault() {
+        launch(["-uiTestReset"])
+        tap("onboarding.start")
+        tap("onboarding.next")
+        tap("builder.buddyName")
+        app.typeText("Bubbles")
+        tap("onboarding.finish")
+        open("character", title: "My character")
+
+        tap("builder.buddyName")
+        let field = app.textFields["builder.buddyName"]
+        XCTAssertEqual(field.value as? String, "Bubbles")
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Bubbles".count))
+        tap("character.save")
+        app.terminate()
+        launch([])
+        open("character", title: "My character")
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        XCTAssertEqual(field.value as? String, "Pip")
+    }
+
     func testFavoriteAndFilterNavigation() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
         tap("filter.fidgets")

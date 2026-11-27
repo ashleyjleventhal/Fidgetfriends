@@ -4,7 +4,7 @@ struct OnboardingView: View {
     @EnvironmentObject private var store: AppStore
     @State private var step = 0
     @State private var nickname = ""
-    @State private var buddyName = "Pip"
+    @State private var buddyName = ""
     @State private var look = CharacterLook()
     @State private var addSamples = false
 
@@ -132,14 +132,12 @@ struct OnboardingView: View {
     }
 
     private func finish() {
-        let name = buddyName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let nick = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
         if addSamples && store.items.isEmpty {
             CollectionItem.samples.forEach(store.add)
         }
         store.profile = Profile(
-            nickname: nick,
-            buddyName: name.isEmpty ? "Pip" : name,
+            nickname: nickname.trimmingCharacters(in: .whitespacesAndNewlines),
+            buddyName: Profile.resolvedBuddyName(buddyName),
             look: look
         )
     }

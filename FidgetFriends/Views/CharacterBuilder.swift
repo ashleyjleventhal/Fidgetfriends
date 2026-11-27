@@ -55,7 +55,7 @@ struct CharacterBuilder: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 SectionLabel(text: "Name your buddy", trailing: "Optional")
-                FunTextField(placeholder: "Pip", text: $buddyName, maxLength: 16)
+                FunTextField(placeholder: Profile.defaultBuddyName, text: $buddyName, maxLength: 16)
                     .accessibilityIdentifier("builder.buddyName")
             }
         }

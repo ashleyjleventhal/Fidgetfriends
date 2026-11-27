@@ -63,10 +63,11 @@ struct CharacterScreen: View {
     private func save() {
         guard var profile = store.profile else { return }
         profile.look = look
-        let name = buddyName.trimmingCharacters(in: .whitespaces)
-        profile.buddyName = name.isEmpty ? profile.buddyName : name
+        profile.buddyName = Profile.resolvedBuddyName(buddyName)
         profile.nickname = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
         store.profile = profile
+        buddyName = profile.buddyName
+        nickname = profile.nickname
         savedBanner = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { savedBanner = false }
     }
