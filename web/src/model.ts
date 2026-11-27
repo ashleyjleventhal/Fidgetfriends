@@ -34,6 +34,6 @@ export function publicItems(items: Item[]) { return items.map(({ name, species, 
 export function isCollection(value: unknown): value is Collection {
   if (!value || typeof value !== 'object') return false;
   const c = value as Collection;
-  const validLook = (l: Look) => l && buddySpecies.includes(l.species) && l.color in colors && ['sparkle', 'dots', 'happy', 'sleepy', 'wink'].includes(l.eyes) && ['none', 'crown', 'bow', 'partyHat'].includes(l.accessory) && typeof l.cheeks === 'boolean';
+  const validLook = (l: Look) => Boolean(l && buddySpecies.includes(l.species) && l.color in colors && ['sparkle', 'dots', 'happy', 'sleepy', 'wink'].includes(l.eyes) && ['none', 'crown', 'bow', 'partyHat'].includes(l.accessory) && typeof l.cheeks === 'boolean');
   return c.version === 1 && (c.profile === null || (typeof c.profile?.nickname === 'string' && typeof c.profile?.buddyName === 'string' && validLook(c.profile.look))) && Array.isArray(c.items) && c.items.every(i => i && typeof i.id === 'string' && typeof i.name === 'string' && i.species in species && i.color in colors && ['squishy', 'fidget'].includes(i.kind) && typeof i.notes === 'string' && typeof i.favorite === 'boolean' && Number.isFinite(i.createdAt) && Array.isArray(i.tags) && i.tags.every(t => tags.includes(t)) && (i.photo === undefined || /^data:image\/(jpeg|png|webp);base64,/.test(i.photo)));
 }
