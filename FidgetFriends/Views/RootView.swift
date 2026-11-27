@@ -80,7 +80,7 @@ struct WideMainView: View {
                         }
                         .id(section)
                         if showsPanel {
-                            DetailPanel(selection: $selection)
+                            DetailPanel(selection: $selection, favoritesOnly: section == .favorites)
                                 .frame(width: min(420, (geo.size.width - sidebarWidth) * 0.42))
                         }
                     }
@@ -153,10 +153,11 @@ private struct WideSidebar: View {
 private struct DetailPanel: View {
     @EnvironmentObject private var store: AppStore
     @Binding var selection: UUID?
+    var favoritesOnly = false
 
     var body: some View {
         ScrollView {
-            if let item = store.item(selection) {
+            if let item = store.item(selection), !favoritesOnly || item.isFavorite {
                 ItemDetailContent(item: item) { selection = nil }
                     .padding(24)
             } else {
