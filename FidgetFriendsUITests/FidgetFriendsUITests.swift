@@ -230,6 +230,10 @@ final class FidgetFriendsUITests: XCTestCase {
         XCTAssertTrue(fidget.isSelected)
         screenshot("13-draft-after-layout-change")
         tap("editor.cancel")
+        let discard = app.alerts["Throw away this toy?"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 5))
+        discard.buttons["Throw away"].tap()
+        XCTAssertTrue(fidget.waitForNonExistence(timeout: 5))
 
         let favoritesSidebar = element("sidebar.favorites")
         XCTAssertTrue(favoritesSidebar.waitForExistence(timeout: 5))
@@ -246,24 +250,78 @@ final class FidgetFriendsUITests: XCTestCase {
         tap("shelf.share")
         XCTAssertTrue(element("share.poster").waitForExistence(timeout: 5))
         screenshot("09-share-preview")
-        XCTAssertFalse(element("share.open").exists)
-        tap("share.continue")
 
-        let question = element("gate.question")
-        XCTAssertTrue(question.waitForExistence(timeout: 3))
+        openGate()
         screenshot("10-grown-up-gate")
-        let answer = Self.answer(to: question.label)
-        XCTAssertNotNil(answer, "Could not read \(question.label)")
-        for digit in String(answer ?? 0) { tap("gate.key.\(digit)") }
+        let firstKey = element("gate.key.1")
+        let originalPosition = firstKey.frame.minY
+        tap("gate.key.0")
         tap("gate.submit")
+        XCTAssertTrue(app.staticTexts["Not quite — try a new one."].waitForExistence(timeout: 3))
+        XCTAssertEqual(firstKey.frame.minY, originalPosition, accuracy: 1)
+        XCTAssertFalse(element("gate.submit").isEnabled)
+        XCTAssertFalse(shareSheet.exists)
 
-        tap("share.open")
-        let sheet = app.otherElements["ActivityListView"].firstMatch
-        let copy = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Copy", "Save Image", "Messages"])).firstMatch
-        XCTAssertTrue(sheet.waitForExistence(timeout: 8) || copy.waitForExistence(timeout: 2), "System share sheet did not appear")
+        tap("gate.cancel")
+        XCTAssertTrue(element("share.continue").waitForExistence(timeout: 3))
+        XCTAssertFalse(shareSheet.exists)
+
+        openGate()
+        tryAnsweringGate()
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 8), "System share sheet did not appear")
         let imageAction = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Save Image", "Save to Photos"])).firstMatch
         XCTAssertTrue(imageAction.waitForExistence(timeout: 10), "System share sheet did not offer to save the poster")
         screenshot("11-system-share-sheet")
+
+        let copy = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Copy")).firstMatch
+        XCTAssertTrue(copy.waitForExistence(timeout: 5) && copy.isHittable)
+        copy.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: shareSheet)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 5), .completed)
+        XCTAssertEqual(app.state, .runningForeground)
+        openGate()
+    }
+
+    func testBackgroundingClearsGateAndDismissesShareSheet() {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
+        tap("shelf.share")
+        openGate()
+        tap("gate.key.1")
+        goHomeAndReturn()
+
+        openGate()
+        XCTAssertFalse(element("gate.submit").isEnabled)
+        tryAnsweringGate()
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 8))
+        goHomeAndReturn()
+        openGate()
+    }
+
+    private func openGate() {
+        XCTAssertTrue(element("share.continue").waitForExistence(timeout: 5))
+        XCTAssertFalse(shareSheet.exists)
+        tap("share.continue")
+        XCTAssertTrue(element("gate.question").waitForExistence(timeout: 3))
+    }
+
+    private func tryAnsweringGate() {
+        let question = element("gate.question").label
+        guard let answer = Self.answer(to: question) else {
+            XCTFail("Could not read \(question)")
+            return
+        }
+        for digit in String(answer) { tap("gate.key.\(digit)") }
+        tap("gate.submit")
+    }
+
+    private var shareSheet: XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Copy", "Save Image"])).firstMatch
+    }
+
+    private func goHomeAndReturn() {
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5) || app.state == .runningBackgroundSuspended)
+        app.activate()
     }
 
     func testShareAndGrownUpActionsFitWithoutScrollingInPortrait() {

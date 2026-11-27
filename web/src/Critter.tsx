@@ -28,5 +28,10 @@ export function Critter({ species = 'blob', color = 'grape', look, className = '
     {l.accessory === 'bow' && <g fill="#e67a9f" stroke="#c55c85" strokeWidth="2"><path d="M123 58c-34-28-30 17 0 2 29 16 30-27 0-2Z"/><circle cx="123" cy="59" r="5"/></g>}
     {l.accessory === 'partyHat' && <><path d="m77 58 24-47 24 47Z" fill="#f4bf7b"/><path d="m85 42 30 2m-24-15 16 2" stroke="#f18db1" strokeWidth="6"/><circle cx="101" cy="12" r="7" fill="#c6a4e9"/></>}
     <path d="M54 84q4-12 14-13" fill="none" stroke="#fff" strokeWidth="5" opacity=".6" strokeLinecap="round"/>
+    {s === 'otherSquishy' && <g transform="rotate(12 151 57)">
+      <circle cx="151" cy="57" r="23" fill="#fff3c7" stroke="#d8ae43" strokeWidth="3"/>
+      <path d="M143 50a8 8 0 1 1 13 6c-3 2-5 3-5 7" fill="none" stroke="#735789" strokeWidth="4.5" strokeLinecap="round"/>
+      <circle cx="151" cy="70" r="2.5" fill="#735789"/>
+    </g>}
   </svg>;
 }

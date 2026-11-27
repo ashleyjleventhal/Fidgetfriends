@@ -4,7 +4,7 @@ An independent, local-only web companion to the native iOS app. No native app fi
 
 ## Develop
 
-Use Node 24 LTS. No pre-commit hooks are configured in this repository.
+Use Node 24 LTS. The publication regression test also needs Bash and rsync (available on the Linux CI runner). No pre-commit hooks are configured in this repository.
 
 ```sh
 cd web
@@ -41,3 +41,5 @@ Open the public HTTPS link in Safari, tap **Share → Add to Home Screen → Add
 ## Hosting
 
 The `web-checks` workflow checks pull requests. `publish-web` runs on web changes merged to main, or can be manually dispatched against a chosen branch after the workflow reaches main. It updates the existing `gh-pages` branch with only the built static directory. Pages uses **Deploy from a branch → gh-pages → / (root)**. The first deployment bootstraps that branch with the same `dist/` output. Never change repository visibility from a script; the owner controls it.
+
+Publication compares file contents, not timestamps, and retains prior hashed files in `assets/` so cached HTML and open tabs keep loading across releases. Root files still synchronize with the current build; the copied entry point is checked before publishing. `npm test` exercises this copy with changed HTML having exactly the same size and modification time as the previous release.

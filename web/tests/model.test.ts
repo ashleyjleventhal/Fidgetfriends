@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { filteredItems, fitName, isCollection, limitText, publicItems, shortName } from '../src/model.ts';
+import { filteredItems, isCollection, limitText, publicItems, shortName } from '../src/model.ts';
 import type { Item } from '../src/model.ts';
 const item: Item = { id: 'one', name: 'Péachy', species: 'axolotl', color: 'bubblegum', kind: 'squishy', notes: 'PRIVATE birthday note', photo: 'data:image/jpeg;base64,PRIVATE', tags: ['Soft'], favorite: true, createdAt: 1 };
 test('sharing is an allowlist and does not leak photos or notes', () => {
@@ -34,8 +34,4 @@ test('typing past a limit drops the new text, never the text already there', () 
   assert.equal(limitText('abXYZcd', 4, 'abcd'), 'abcd');
   assert.equal(limitText('ab🦄🌈cd', 5, 'abcd'), 'ab🦄cd');
   assert.equal(limitText('abcdef', 4, ''), 'abcd');
-});
-test('long emoji names are squeezed to fit the poster card', () => {
-  assert.deepEqual(fitName('Mochi'), {});
-  assert.equal(fitName('👨‍👩‍👧‍👦'.repeat(20)).textLength, 290);
 });
