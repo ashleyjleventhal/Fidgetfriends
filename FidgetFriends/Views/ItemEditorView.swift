@@ -15,6 +15,9 @@ struct ItemEditorView: View {
     @State private var photoSelection: PhotosPickerItem?
     @State private var pickedPhoto: UIImage?
     @State private var removePhoto = false
+    @State private var photoState: PhotoState = .idle
+
+    private enum PhotoState: Equatable { case idle, loading, failed(String) }
 
     init(mode: Mode) {
         self.mode = mode
@@ -27,7 +30,7 @@ struct ItemEditorView: View {
     }
 
     private var isEditing: Bool { if case .edit = mode { return true } else { return false } }
-    private var canSave: Bool { !draft.name.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var canSave: Bool { !draft.name.trimmingCharacters(in: .whitespaces).isEmpty && photoState != .loading }
     private var speciesChoices: [CritterSpecies] { draft.kind == .squishy ? CritterSpecies.squishyChoices : CritterSpecies.fidgetChoices }
 
     private var previewPhoto: UIImage? {
@@ -100,10 +103,16 @@ struct ItemEditorView: View {
             }
             .onChange(of: photoSelection) { _, newValue in
                 guard let newValue else { return }
+                photoState = .loading
                 Task {
-                    if let data = try? await newValue.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                    let image = try? await newValue.loadTransferable(type: Data.self).flatMap(UIImage.init(data:))
+                    guard photoSelection == newValue else { return }
+                    if let image {
                         pickedPhoto = image
                         removePhoto = false
+                        photoState = .idle
+                    } else {
+                        photoState = .failed("Couldn't get that photo. Try another one.")
                     }
                 }
             }
@@ -121,11 +130,27 @@ struct ItemEditorView: View {
                 }
                 .buttonStyle(.chunky(Palette.sunshine, shadow: Palette.sunshineDeep, foreground: Palette.ink, fullWidth: false))
                 .accessibilityIdentifier("editor.photo")
+                switch photoState {
+                case .loading:
+                    HStack(spacing: 6) {
+                        ProgressView()
+                        Text("Getting your photo…").font(.fun(.footnote, weight: .semibold)).foregroundStyle(Palette.inkSoft)
+                    }
+                    .accessibilityIdentifier("editor.photoLoading")
+                case .failed(let message):
+                    Text(message)
+                        .font(.fun(.footnote, weight: .semibold))
+                        .foregroundStyle(Palette.coralDeep)
+                        .accessibilityIdentifier("editor.photoError")
+                case .idle:
+                    EmptyView()
+                }
                 if previewPhoto != nil {
                     Button("Use drawing instead") {
                         pickedPhoto = nil
                         photoSelection = nil
                         removePhoto = true
+                        photoState = .idle
                     }
                     .font(.fun(.subheadline))
                     .accessibilityIdentifier("editor.removePhoto")
@@ -211,7 +236,11 @@ struct ItemEditorView: View {
     private func save() {
         var item = draft
         item.name = item.name.trimmingCharacters(in: .whitespaces)
-        if let pickedPhoto, let name = store.savePhoto(pickedPhoto) {
+        if let pickedPhoto {
+            guard let name = store.savePhoto(pickedPhoto) else {
+                photoState = .failed("Couldn't save that photo. Try again or use the drawing.")
+                return
+            }
             item.photoFileName = name
         } else if removePhoto {
             item.photoFileName = nil

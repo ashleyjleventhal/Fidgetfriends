@@ -54,6 +54,13 @@ struct ShareFlowView: View {
         }
         .frame(maxHeight: 520)
 
+        if let note = SharePoster.truncationNote(shown: featured.count, total: items.count) {
+            Label("\(note). The picture fits up to \(SharePoster.maxItems) toys.", systemImage: "info.circle.fill")
+                .font(.fun(.subheadline, weight: .semibold))
+                .foregroundStyle(Palette.coralDeep)
+                .accessibilityIdentifier("share.truncated")
+        }
+
         Label("Only toy pictures and names go in. Your nickname and private notes stay out.", systemImage: "lock.shield.fill")
             .font(.fun(.subheadline, weight: .semibold))
             .foregroundStyle(Palette.grape)
@@ -102,6 +109,10 @@ struct SharePoster: View {
     let photos: [UUID: UIImage]
     let look: CharacterLook?
 
+    static func truncationNote(shown: Int, total: Int) -> String? {
+        shown < total ? "Showing \(shown) of \(total) · favorites first" : nil
+    }
+
     /// Favorites first, then newest, capped so the picture stays readable.
     static func featured(from items: [CollectionItem]) -> [CollectionItem] {
         Array((items.filter(\.isFavorite) + items.filter { !$0.isFavorite }).prefix(maxItems))
@@ -120,6 +131,11 @@ struct SharePoster: View {
                         Text("\(totalCount) tiny besties on my happy shelf")
                             .font(.system(size: 20, weight: .bold, design: .rounded))
                             .foregroundStyle(Palette.sunshine)
+                        if let note = Self.truncationNote(shown: items.count, total: totalCount) {
+                            Text(note)
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.9))
+                        }
                     }
                     Spacer(minLength: 0)
                     if let look {

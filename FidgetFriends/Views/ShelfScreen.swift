@@ -137,7 +137,7 @@ struct ShelfScreen: View {
     private var bottomButtons: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) {
-                addButton.frame(maxWidth: 150)
+                addButton.fixedSize(horizontal: true, vertical: false)
                 shareButton
             }
             VStack(spacing: 10) {

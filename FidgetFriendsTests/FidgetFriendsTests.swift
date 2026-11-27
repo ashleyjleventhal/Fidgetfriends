@@ -69,6 +69,8 @@ final class FidgetFriendsTests: XCTestCase {
         let featured = SharePoster.featured(from: items)
         XCTAssertEqual(featured.count, SharePoster.maxItems)
         XCTAssertEqual(featured.first?.name, "Toy 15")
+        XCTAssertEqual(SharePoster.truncationNote(shown: featured.count, total: items.count), "Showing 12 of 20 · favorites first")
+        XCTAssertNil(SharePoster.truncationNote(shown: 7, total: 7))
     }
 
     func testPosterRendersOnDevice() throws {
