@@ -114,11 +114,46 @@ final class FidgetFriendsUITests: XCTestCase {
         screenshot("08-favorites")
     }
 
+    func testIPadLayoutChangesKeepFavoritesAndAddToyDraft() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad)
+        let device = XCUIDevice.shared
+        device.orientation = .landscapeLeft
+        defer { device.orientation = .portrait }
+        launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed", "-uiTestLayoutByOrientation"])
+
+        tap("sidebar.favorites")
+        device.orientation = .portrait
+        let favoritesTab = app.tabBars.buttons["Favorites"].firstMatch
+        XCTAssertTrue(favoritesTab.waitForExistence(timeout: 5))
+        XCTAssertTrue(favoritesTab.isSelected)
+        XCTAssertEqual(element("shelf.title").label, "My favorites")
+        screenshot("12-favorites-compact")
+
+        tap("shelf.add")
+        tap("editor.kind.fidget")
+        device.orientation = .landscapeLeft
+        let fidget = element("editor.kind.fidget")
+        XCTAssertTrue(fidget.waitForExistence(timeout: 5))
+        XCTAssertTrue(fidget.isSelected)
+        screenshot("13-draft-after-layout-change")
+        tap("editor.cancel")
+
+        let favoritesSidebar = element("sidebar.favorites")
+        XCTAssertTrue(favoritesSidebar.waitForExistence(timeout: 5))
+        XCTAssertTrue(favoritesSidebar.isSelected)
+        tap("shelf.add")
+        let squishy = element("editor.kind.squishy")
+        XCTAssertTrue(squishy.waitForExistence(timeout: 5))
+        XCTAssertTrue(squishy.isSelected)
+        tap("editor.cancel")
+    }
+
     func testShareRequiresGrownUpThenOpensShareSheet() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
         tap("shelf.share")
         XCTAssertTrue(element("share.poster").waitForExistence(timeout: 5))
         screenshot("09-share-preview")
+        XCTAssertFalse(element("share.open").exists)
         tap("share.continue")
 
         let question = element("gate.question")
@@ -133,6 +168,8 @@ final class FidgetFriendsUITests: XCTestCase {
         let sheet = app.otherElements["ActivityListView"].firstMatch
         let copy = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Copy", "Save Image", "Messages"])).firstMatch
         XCTAssertTrue(sheet.waitForExistence(timeout: 8) || copy.waitForExistence(timeout: 2), "System share sheet did not appear")
+        let imageAction = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Save Image", "Save to Photos"])).firstMatch
+        XCTAssertTrue(imageAction.waitForExistence(timeout: 10), "System share sheet did not offer to save the poster")
         screenshot("11-system-share-sheet")
     }
 

@@ -23,33 +23,66 @@ enum AppSection: String, Hashable, CaseIterable {
 struct RootView: View {
     @EnvironmentObject private var store: AppStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var section: AppSection = .collection
+    @State private var showingEditor = false
+
+    #if DEBUG
+    @State private var testSizeClass: UserInterfaceSizeClass?
+    #endif
 
     var body: some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-uiTestLayoutByOrientation") {
+            content
+                .environment(\.horizontalSizeClass, testSizeClass ?? horizontalSizeClass)
+                .onGeometryChange(for: Bool.self, of: { $0.size.width > $0.size.height }) { isLandscape in
+                    testSizeClass = isLandscape ? .regular : .compact
+                }
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+
+    private var usesWideLayout: Bool {
+        #if DEBUG
+        if let testSizeClass { return testSizeClass == .regular }
+        #endif
+        return horizontalSizeClass == .regular
+    }
+
+    private var content: some View {
         Group {
             if store.profile == nil {
                 OnboardingView()
                     .transition(.opacity)
-            } else if horizontalSizeClass == .regular {
-                WideMainView()
+            } else if usesWideLayout {
+                WideMainView(section: $section, onAddToy: addToy)
             } else {
-                PhoneMainView()
+                PhoneMainView(section: $section, onAddToy: addToy)
             }
         }
         .tint(Palette.grape)
+        .sheet(isPresented: $showingEditor) { ItemEditorView(mode: .add) }
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: store.profile == nil)
     }
+
+    private func addToy() { showingEditor = true }
 }
 
 struct PhoneMainView: View {
-    @State private var section: AppSection = .collection
+    @Binding var section: AppSection
+    let onAddToy: () -> Void
 
     var body: some View {
         TabView(selection: $section) {
             ForEach(AppSection.allCases, id: \.self) { section in
                 NavigationStack {
                     switch section {
-                    case .collection: ShelfScreen(favoritesOnly: false, selection: nil)
-                    case .favorites: ShelfScreen(favoritesOnly: true, selection: nil)
+                    case .collection: ShelfScreen(favoritesOnly: false, selection: nil, onAddToy: onAddToy)
+                    case .favorites: ShelfScreen(favoritesOnly: true, selection: nil, onAddToy: onAddToy)
                     case .character: CharacterScreen()
                     }
                 }
@@ -62,7 +95,8 @@ struct PhoneMainView: View {
 
 struct WideMainView: View {
     @EnvironmentObject private var store: AppStore
-    @State private var section: AppSection = .collection
+    @Binding var section: AppSection
+    let onAddToy: () -> Void
     @State private var selection: UUID?
 
     var body: some View {
@@ -76,7 +110,7 @@ struct WideMainView: View {
                 case .collection, .favorites:
                     HStack(spacing: 0) {
                         NavigationStack {
-                            ShelfScreen(favoritesOnly: section == .favorites, selection: showsPanel ? $selection : nil)
+                            ShelfScreen(favoritesOnly: section == .favorites, selection: showsPanel ? $selection : nil, onAddToy: onAddToy)
                         }
                         .id(section)
                         if showsPanel {
