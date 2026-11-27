@@ -29,7 +29,7 @@ final class FidgetFriendsUITests: XCTestCase {
         let target = element(id)
         XCTAssertTrue(target.waitForExistence(timeout: timeout), "Missing \(id)")
         var swipes = 0
-        while (!target.isHittable || isCoveredByShelfButtons(target)) && swipes < 6 {
+        while (!target.isHittable || isCoveredByBottomActions(target)) && swipes < 6 {
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -220)))
             swipes += 1
@@ -37,9 +37,17 @@ final class FidgetFriendsUITests: XCTestCase {
         target.tap()
     }
 
-    private func isCoveredByShelfButtons(_ target: XCUIElement) -> Bool {
-        guard target.identifier.hasPrefix("item.card") else { return false }
-        let bar = [element("shelf.share"), element("shelf.add")].filter(\.exists).map(\.frame.minY).min() ?? .infinity
+    private func isCoveredByBottomActions(_ target: XCUIElement) -> Bool {
+        let actions: [String]
+        switch target.identifier {
+        case let id where id.hasPrefix("item.card"):
+            actions = ["shelf.share", "shelf.add"]
+        case let id where id.hasPrefix("editor.") && id != "editor.save":
+            actions = ["editor.save"]
+        default:
+            return false
+        }
+        let bar = actions.map { element($0) }.filter(\.exists).map(\.frame.minY).min() ?? .infinity
         return target.frame.maxY > bar - 8
     }
 
@@ -139,9 +147,9 @@ final class FidgetFriendsUITests: XCTestCase {
         tap("shelf.add")
         tap("editor.species.bunny")
         tap("editor.color.sky")
-        tap("editor.name")
-        app.typeText("Marshmallow")
         tap("editor.tag.soft")
+        tap("editor.name")
+        app.textFields["editor.name"].typeText("Marshmallow")
         screenshot("05-add-toy")
         tap("editor.save")
         XCTAssertTrue(element("item.card.Marshmallow").waitForExistence(timeout: 3))
