@@ -254,6 +254,27 @@ final class FidgetFriendsUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Hi Juniper! Change your buddy any time."].waitForExistence(timeout: 5))
     }
 
+    func testReplacingFullToyNameKeepsPrefixOfPastedName() {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding"])
+        tap("shelf.add")
+        tap("editor.name")
+        let name = element("editor.name")
+        let original = "ABCDEFGHIJKLMNOPQRSTUVWX"
+        name.typeText(original)
+        XCTAssertEqual(name.value as? String, original)
+
+        let replacement = "abcdefghijklmnopqrstuvwxyz"
+        tap("editor.notes")
+        let notes = element("editor.notes")
+        notes.typeText(replacement)
+        notes.typeKey("a", modifierFlags: .command)
+        notes.typeKey("c", modifierFlags: .command)
+        tap("editor.name")
+        name.typeKey("a", modifierFlags: .command)
+        name.typeKey("v", modifierFlags: .command)
+        XCTAssertEqual(name.value as? String, String(replacement.prefix(24)))
+    }
+
     func testLargestTypePhotoEditorAndLongToyNameFit() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding",
                 "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
