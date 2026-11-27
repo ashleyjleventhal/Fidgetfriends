@@ -27,6 +27,11 @@ export function limitText(text: string, max: number, previous = ''): string {
   return [...next.slice(0, start + room), ...next.slice(next.length - end)].join('');
 }
 export function shortName(text: string, max: number): string { const parts = graphemeList(text); return parts.length > max ? parts.slice(0, max).join('') + '…' : text; }
+const nameWidth = 290;
+export function fitName(name: string) {
+  const estimate = graphemeList(name).reduce((w, g) => w + (/\p{Extended_Pictographic}|[^\x00-\u024f]/u.test(g) ? 30 : 15), 0);
+  return estimate > nameWidth ? { textLength: nameWidth, lengthAdjust: 'spacingAndGlyphs' as const } : {};
+}
 export function newItem(): Item { return { id: crypto.randomUUID(), name: '', kind: 'squishy', species: 'blob', color: 'bubblegum', tags: [], notes: '', favorite: false, createdAt: Date.now() }; }
 export function filteredItems(items: Item[], filter: Filter, query: string): Item[] {
   const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
