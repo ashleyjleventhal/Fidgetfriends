@@ -21,18 +21,19 @@ function Modal({ title, close, children, wide = false }: { title: string; close:
   </dialog>;
 }
 const setupDraftKey = 'fidget-friends-setup-draft';
-function loadSetupDraft(): Profile | null {
-  try { const draft = JSON.parse(sessionStorage.getItem(setupDraftKey) ?? 'null'); return draft && isCollection({ version: 1, profile: draft, items: [] }) ? draft : null; } catch { return null; }
+function loadSetupDraft(): { profile: Profile; samples: boolean } | null {
+  try { const draft = JSON.parse(sessionStorage.getItem(setupDraftKey) ?? 'null'); return draft && typeof draft.samples === 'boolean' && isCollection({ version: 1, profile: draft.profile, items: [] }) ? draft : null; } catch { return null; }
 }
-function saveSetupDraft(profile: Profile) { try { sessionStorage.setItem(setupDraftKey, JSON.stringify(profile)); } catch { /* Storage may be full or blocked; setup still works without a draft. */ } }
+function saveSetupDraft(profile: Profile, samples: boolean) { try { sessionStorage.setItem(setupDraftKey, JSON.stringify({ profile, samples })); } catch { /* Storage may be full or blocked; setup still works without a draft. */ } }
 function clearSetupDraft() { try { sessionStorage.removeItem(setupDraftKey); } catch { /* ignore */ } }
 function ColorPicker({ value, onChange }: { value: Color; onChange: (c: Color) => void }) {
   return <div className="swatches">{(Object.keys(colors) as Color[]).map(c => <button key={c} type="button" className={`swatch ${value === c ? 'selected' : ''}`} style={{ background: c === 'rainbow' ? 'conic-gradient(#f5a9c6,#f5d76d,#8cd6b0,#94cbed,#b99ae9,#f5a9c6)' : colors[c][1] }} aria-label={colors[c][0]} aria-pressed={value === c} onClick={() => onChange(c)}>{value === c && <Icon name="check" size={19}/>}</button>)}</div>;
 }
 function BuddyEditor({ initial, onboarding = false, save, busy }: { initial?: Profile; onboarding?: boolean; save: (p: Profile, samples: boolean) => void; busy: boolean }) {
-  const [profile, setProfile] = useState<Profile>(() => initial ?? (onboarding ? loadSetupDraft() : null) ?? { nickname: '', buddyName: 'Pip', look: defaultLook });
-  useEffect(() => { if (onboarding) saveSetupDraft(profile); }, [onboarding, profile]);
-  const [samples, setSamples] = useState(true);
+  const [draft] = useState(() => onboarding && !initial ? loadSetupDraft() : null);
+  const [profile, setProfile] = useState<Profile>(initial ?? draft?.profile ?? { nickname: '', buddyName: 'Pip', look: defaultLook });
+  const [samples, setSamples] = useState(draft?.samples ?? true);
+  useEffect(() => { if (onboarding) saveSetupDraft(profile, samples); }, [onboarding, profile, samples]);
   const changeLook = (part: Partial<Look>) => setProfile(p => ({ ...p, look: { ...p.look, ...part } }));
   return <form onSubmit={e => { e.preventDefault(); save({ ...profile, nickname: profile.nickname.trim(), buddyName: profile.buddyName.trim() || 'Pip' }, samples); }} className="buddy-editor">
     {onboarding && <p className="muted">Every collection starts with a little friend. Let’s make yours!</p>}
@@ -41,8 +42,8 @@ function BuddyEditor({ initial, onboarding = false, save, busy }: { initial?: Pr
     <fieldset><legend>A favorite color</legend><ColorPicker value={profile.look.color} onChange={color => changeLook({ color })}/></fieldset>
     <div className="form-columns"><label>Eyes<select value={profile.look.eyes} onChange={e => changeLook({ eyes: e.target.value as Look['eyes'] })}>{['sparkle', 'dots', 'happy', 'sleepy', 'wink'].map(v => <option key={v} value={v}>{v[0].toUpperCase() + v.slice(1)}</option>)}</select></label><label>Little extra<select value={profile.look.accessory} onChange={e => changeLook({ accessory: e.target.value as Look['accessory'] })}><option value="none">Nothing extra</option><option value="crown">A tiny crown</option><option value="bow">A little bow</option><option value="partyHat">Party hat</option></select></label></div>
     <label className="check-label"><input type="checkbox" checked={profile.look.cheeks} onChange={e => changeLook({ cheeks: e.target.checked })}/> Rosy cheeks</label>
-    <label>Buddy’s name<input value={profile.buddyName} onChange={e => setProfile({ ...profile, buddyName: limitText(e.target.value, 24) })}/></label>
-    <label>Your nickname <span className="optional">optional · stays private</span><input value={profile.nickname} autoComplete="off" placeholder="What should your buddy call you?" onChange={e => setProfile({ ...profile, nickname: limitText(e.target.value, 24) })}/></label>
+    <label>Buddy’s name<input value={profile.buddyName} onChange={e => setProfile({ ...profile, buddyName: limitText(e.target.value, 24, profile.buddyName) })}/></label>
+    <label>Your nickname <span className="optional">optional · stays private</span><input value={profile.nickname} autoComplete="off" placeholder="What should your buddy call you?" onChange={e => setProfile({ ...profile, nickname: limitText(e.target.value, 24, profile.nickname) })}/></label>
     {onboarding && <label className="check-label"><input type="checkbox" checked={samples} onChange={e => setSamples(e.target.checked)}/> Start with 7 pretend toys to explore</label>}
     <button className="button primary full" disabled={busy}>{busy ? 'Saving…' : onboarding ? 'Meet my happy shelf' : 'Save my buddy'}<Icon name="arrow"/></button>
     {onboarding && <p className="small center muted"><Icon name="lock" size={14}/> No accounts. No ads. Just your little world.</p>}
@@ -54,7 +55,7 @@ function ItemEditor({ initial, save, busy }: { initial?: Item; save: (i: Item) =
   const choices: Species[] = item.kind === 'squishy' ? [...buddySpecies, 'otherSquishy'] : fidgetSpecies;
   return <form className="item-editor" onSubmit={e => { e.preventDefault(); save({ ...item, name: item.name.trim() || species[item.species], notes: item.notes.trim() }); }}>
     <div className="item-preview" style={{ background: colors[item.color][2] }}>{item.photo ? <img src={item.photo} alt="Your toy preview"/> : <Critter species={item.species} color={item.color}/>}</div>
-    <label>Toy name<input placeholder="Give your little friend a name" value={item.name} onChange={e => setItem({ ...item, name: limitText(e.target.value, 40) })}/></label>
+    <label>Toy name<input placeholder="Give your little friend a name" value={item.name} onChange={e => setItem({ ...item, name: limitText(e.target.value, 40, item.name) })}/></label>
     <fieldset><legend>What kind of happy?</legend><div className="segmented">{(['squishy', 'fidget'] as const).map(kind => <button type="button" key={kind} aria-pressed={item.kind === kind} className={item.kind === kind ? 'selected' : ''} onClick={() => setItem({ ...item, kind, species: kind === 'squishy' ? 'blob' : 'popIt' })}><Icon name={kind === 'squishy' ? 'cloud' : 'grid'}/>{kind === 'squishy' ? 'Squishy' : 'Fidget'}</button>)}</div></fieldset>
     <label>Shape<select value={item.species} onChange={e => setItem({ ...item, species: e.target.value as Species })}>{choices.map(s => <option value={s} key={s}>{species[s]}</option>)}</select></label>
     <fieldset><legend>Color</legend><ColorPicker value={item.color} onChange={color => setItem({ ...item, color })}/></fieldset>
@@ -62,7 +63,7 @@ function ItemEditor({ initial, save, busy }: { initial?: Item; save: (i: Item) =
     <label className="check-label"><input type="checkbox" checked={item.favorite} onChange={e => setItem({ ...item, favorite: e.target.checked })}/> One of my favorites</label>
     <label>A photo <span className="optional">optional · stays on this device</span><input type="file" accept="image/*" disabled={photoBusy || busy} onChange={async e => { const file = e.target.files?.[0]; if (!file) return; setPhotoBusy(true); setPhotoError(''); try { const photo = await resizePhoto(file); setItem(p => ({ ...p, photo })); } catch (error) { setPhotoError((error as Error).message); } finally { setPhotoBusy(false); e.target.value = ''; } }}/></label>
     {photoBusy && <p role="status">Opening photo…</p>}{photoError && <p role="alert" className="error">{photoError}</p>}{item.photo && <button type="button" className="text-button" onClick={() => setItem({ ...item, photo: undefined })}>Remove photo</button>}
-    <label>Private little notes <span className="optional">never included in sharing</span><textarea rows={3} value={item.notes} placeholder="A birthday gift? A super-satisfying squish?" onChange={e => setItem({ ...item, notes: limitText(e.target.value, 1000) })}/></label>
+    <label>Private little notes <span className="optional">never included in sharing</span><textarea rows={3} value={item.notes} placeholder="A birthday gift? A super-satisfying squish?" onChange={e => setItem({ ...item, notes: limitText(e.target.value, 1000, item.notes) })}/></label>
     <button className="button primary full" disabled={busy || photoBusy}>{busy ? 'Saving…' : initial ? 'Save changes' : 'Add to my shelf'}<Icon name="check"/></button>
   </form>;
 }

@@ -14,7 +14,18 @@ export const defaultLook: Look = { species: 'blob', color: 'grape', eyes: 'spark
 export const emptyCollection: Collection = { version: 1, profile: null, items: [] };
 const graphemes = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter() : null;
 export function graphemeList(text: string): string[] { return graphemes ? Array.from(graphemes.segment(text), s => s.segment) : Array.from(text); }
-export function limitText(text: string, max: number): string { const parts = graphemeList(text); return parts.length > max ? parts.slice(0, max).join('') : text; }
+export function limitText(text: string, max: number, previous = ''): string {
+  const next = graphemeList(text);
+  if (next.length <= max) return text;
+  const prev = graphemeList(previous);
+  let start = 0;
+  while (start < prev.length && start < next.length && prev[start] === next[start]) start++;
+  let end = 0;
+  while (end < prev.length - start && end < next.length - start && prev[prev.length - 1 - end] === next[next.length - 1 - end]) end++;
+  const room = max - start - end;
+  if (room < 0) return next.slice(0, max).join('');
+  return [...next.slice(0, start + room), ...next.slice(next.length - end)].join('');
+}
 export function shortName(text: string, max: number): string { const parts = graphemeList(text); return parts.length > max ? parts.slice(0, max).join('') + '…' : text; }
 export function newItem(): Item { return { id: crypto.randomUUID(), name: '', kind: 'squishy', species: 'blob', color: 'bubblegum', tags: [], notes: '', favorite: false, createdAt: Date.now() }; }
 export function filteredItems(items: Item[], filter: Filter, query: string): Item[] {

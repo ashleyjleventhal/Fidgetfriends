@@ -29,3 +29,9 @@ test('name limits count whole emoji instead of splitting them', () => {
   assert.equal(shortName(`${'🦄'.repeat(19)}${family}${family}`, 20), `${'🦄'.repeat(19)}${family}…`);
   assert.equal(shortName('Mochi', 20), 'Mochi');
 });
+test('typing past a limit drops the new text, never the text already there', () => {
+  assert.equal(limitText('abXYcd', 5, 'abcd'), 'abXcd');
+  assert.equal(limitText('abXYZcd', 4, 'abcd'), 'abcd');
+  assert.equal(limitText('ab🦄🌈cd', 5, 'abcd'), 'ab🦄cd');
+  assert.equal(limitText('abcdef', 4, ''), 'abcd');
+});
