@@ -70,6 +70,17 @@ test('scrolls and saves a buddy in a very short landscape viewport', async ({ pa
   else await finish.click();
   await expect(dialog).not.toBeVisible();
 });
+test('draws frog eyes above its face instead of bear ears', async ({ page }) => {
+  await page.goto('/');
+  const dialog = page.getByRole('dialog');
+  const frog = dialog.getByRole('button', { name: 'Frog', exact: true });
+  const bear = dialog.getByRole('button', { name: 'Bear', exact: true });
+  const eyesAboveFace = 'svg ellipse[cy="55"]';
+  await expect(frog.locator(eyesAboveFace)).toHaveCount(2);
+  await expect(bear.locator(eyesAboveFace)).toHaveCount(0);
+  await expect(frog.locator('svg circle')).toHaveCount(0);
+  await expect(bear.locator('svg circle')).toHaveCount(2);
+});
 test('gives Other squishy different artwork from Mochi blob', async ({ page }) => {
   await start(page, false);
   await page.getByRole('button', { name: 'Add my first friend' }).click();
