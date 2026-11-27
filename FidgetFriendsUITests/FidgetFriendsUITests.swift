@@ -269,7 +269,12 @@ final class FidgetFriendsUITests: XCTestCase {
         XCTAssertTrue(imageAction.waitForExistence(timeout: 10), "System share sheet did not offer to save the poster")
         screenshot("11-system-share-sheet")
 
-        dismissShareSheet()
+        let copy = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Copy")).firstMatch
+        XCTAssertTrue(copy.waitForExistence(timeout: 5) && copy.isHittable)
+        copy.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: shareSheet)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 5), .completed)
+        XCTAssertEqual(app.state, .runningForeground)
         openGate()
     }
 
@@ -306,21 +311,7 @@ final class FidgetFriendsUITests: XCTestCase {
     }
 
     private var shareSheet: XCUIElement {
-        app.descendants(matching: .any).matching(NSPredicate(format: "identifier == %@ OR label IN %@", "ActivityListView", ["Copy", "Save Image"])).firstMatch
-    }
-
-    private func dismissShareSheet() {
-        let close = app.buttons.matching(NSPredicate(format: "label IN %@", ["Close", "Cancel"])).allElementsBoundByIndex
-            .first { $0.isHittable && $0.identifier != "share.close" }
-        if let close {
-            close.tap()
-        } else {
-            let grabber = shareSheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
-            let bottom = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.99))
-            grabber.press(forDuration: 0.05, thenDragTo: bottom)
-        }
-        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: shareSheet)
-        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 5), .completed)
+        app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Copy", "Save Image"])).firstMatch
     }
 
     private func goHomeAndReturn() {

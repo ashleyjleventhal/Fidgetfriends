@@ -11,7 +11,7 @@ struct ShareFlowView: View {
     let items: [CollectionItem]
 
     @State private var showingGate = false
-    @State private var showingShareSheet = false
+    @State private var pendingShare: UIImage?
     @State private var poster: UIImage?
 
     var body: some View {
@@ -38,15 +38,14 @@ struct ShareFlowView: View {
             }
         }
         .task { render() }
-        .sheet(isPresented: $showingShareSheet) {
-            if let poster {
-                CollectionActivityView(poster: poster)
-            }
+        .background {
+            CollectionActivityPresenter(poster: $pendingShare)
+                .allowsHitTesting(false)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background {
                 showingGate = false
-                showingShareSheet = false
+                pendingShare = nil
             }
         }
     }
@@ -113,8 +112,8 @@ struct ShareFlowView: View {
 
     private func openShareSheet() {
         showingGate = false
-        guard scenePhase == .active, poster != nil else { return }
-        showingShareSheet = true
+        guard scenePhase == .active else { return }
+        pendingShare = poster
     }
 
     private var featured: [CollectionItem] { SharePoster.featured(from: items) }
@@ -129,14 +128,64 @@ struct ShareFlowView: View {
     }
 }
 
-private struct CollectionActivityView: UIViewControllerRepresentable {
-    let poster: UIImage
+private struct CollectionActivityPresenter: UIViewControllerRepresentable {
+    @Binding var poster: UIImage?
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [poster], applicationActivities: nil)
+    func makeUIViewController(context: Context) -> Presenter { Presenter() }
+
+    func updateUIViewController(_ controller: Presenter, context: Context) {
+        controller.update(poster: poster) { poster = nil }
     }
 
-    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+    final class Presenter: UIViewController, UIAdaptivePresentationControllerDelegate {
+        private var pendingPoster: UIImage?
+        private var onDismiss: (() -> Void)?
+        private weak var activity: UIActivityViewController?
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            presentIfNeeded()
+        }
+
+        func update(poster: UIImage?, onDismiss: @escaping () -> Void) {
+            pendingPoster = poster
+            self.onDismiss = onDismiss
+            if poster == nil, let activity {
+                self.activity = nil
+                activity.dismiss(animated: false)
+            } else {
+                presentIfNeeded()
+            }
+        }
+
+        private func presentIfNeeded() {
+            guard viewIfLoaded?.window != nil, activity == nil, let pendingPoster else { return }
+            let controller = UIActivityViewController(activityItems: [pendingPoster], applicationActivities: nil)
+            if let popover = controller.popoverPresentationController {
+                popover.sourceView = view
+                popover.sourceRect = CGRect(origin: CGPoint(x: view.bounds.midX, y: view.bounds.midY), size: .zero)
+                popover.permittedArrowDirections = []
+            }
+            controller.completionWithItemsHandler = { [weak self, weak controller] _, _, _, _ in
+                guard let controller else { return }
+                self?.didDismiss(controller)
+            }
+            controller.presentationController?.delegate = self
+            activity = controller
+            present(controller, animated: true)
+        }
+
+        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            didDismiss(presentationController.presentedViewController)
+        }
+
+        private func didDismiss(_ controller: UIViewController) {
+            guard activity === controller else { return }
+            activity = nil
+            pendingPoster = nil
+            onDismiss?()
+        }
+    }
 }
 
 struct SharePoster: View {
