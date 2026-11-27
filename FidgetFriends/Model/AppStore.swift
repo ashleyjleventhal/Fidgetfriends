@@ -7,6 +7,8 @@ final class AppStore: ObservableObject {
     @Published private(set) var items: [CollectionItem] = [] { didSet { persist() } }
 
     let directory: URL
+    /// False after a failed write, so photos still referenced by the last saved file are kept.
+    private(set) var lastSaveSucceeded = true
     private let photoCache: NSCache<NSString, UIImage> = {
         let cache = NSCache<NSString, UIImage>()
         cache.countLimit = 40
@@ -66,18 +68,20 @@ final class AppStore: ObservableObject {
 
     func update(_ item: CollectionItem) {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
-        if let old = items[index].photoFileName, old != item.photoFileName {
-            deletePhoto(named: old)
-        }
+        let oldPhoto = items[index].photoFileName
         items[index] = item
+        if let oldPhoto, oldPhoto != item.photoFileName, lastSaveSucceeded {
+            deletePhoto(named: oldPhoto)
+        }
     }
 
     func delete(_ id: UUID) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
-        if let photo = items[index].photoFileName {
+        let photo = items[index].photoFileName
+        items.remove(at: index)
+        if let photo, lastSaveSucceeded {
             deletePhoto(named: photo)
         }
-        items.remove(at: index)
     }
 
     func toggleFavorite(_ id: UUID) {
@@ -117,7 +121,9 @@ final class AppStore: ObservableObject {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let data = try JSONEncoder().encode(Snapshot(profile: profile, items: items))
             try data.write(to: stateURL, options: [.atomic, .completeFileProtection])
+            lastSaveSucceeded = true
         } catch {
+            lastSaveSucceeded = false
             assertionFailure("Could not save collection: \(error)")
         }
     }
