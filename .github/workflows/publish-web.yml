@@ -26,14 +26,13 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - run: bash tests/publish-copy.test.sh
       - name: Publish only static web files
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git fetch origin gh-pages
           git worktree add ../../pages origin/gh-pages
-          bash scripts/copy-published-site.sh dist ../../pages
+          rsync -a --delete --exclude=.git dist/ ../../pages/
           touch ../../pages/.nojekyll
           cd ../../pages
           git add --all
