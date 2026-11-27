@@ -29,6 +29,13 @@ struct ItemEditorView: View {
         }
     }
 
+    /// Starter artwork shows only while the toy still has its original kind, look and color.
+    private func syncStarterArt() {
+        guard case .edit(let original) = mode else { return }
+        let unchanged = draft.kind == original.kind && draft.species == original.species && draft.color == original.color
+        draft.artName = unchanged ? original.artName : nil
+    }
+
     private var isEditing: Bool { if case .edit = mode { return true } else { return false } }
     private var canSave: Bool { !draft.name.trimmingCharacters(in: .whitespaces).isEmpty && photoState != .loading }
     private var speciesChoices: [CritterSpecies] { draft.kind == .squishy ? CritterSpecies.squishyChoices : CritterSpecies.fidgetChoices }
@@ -55,9 +62,9 @@ struct ItemEditorView: View {
                             ForEach(ItemKind.allCases) { kind in
                                 FunChip(title: kind.label, systemImage: kind == .squishy ? "cloud.fill" : "circle.grid.3x3.fill", isOn: draft.kind == kind,
                                         color: kind == .squishy ? Palette.coralDeep : Palette.skyDeep) {
-                                    if draft.kind != kind { draft.artName = nil }
                                     draft.kind = kind
                                     if !speciesChoices.contains(draft.species) { draft.species = speciesChoices[0] }
+                                    syncStarterArt()
                                 }
                                 .accessibilityIdentifier("editor.kind.\(kind.rawValue)")
                             }
@@ -175,7 +182,7 @@ struct ItemEditorView: View {
                     ForEach(speciesChoices) { species in
                         Button {
                             draft.species = species
-                            draft.artName = nil
+                            syncStarterArt()
                         } label: {
                             VStack(spacing: 4) {
                                 CritterView(species: species, color: draft.color, showsShadow: false).frame(width: 60, height: 60)
@@ -203,7 +210,7 @@ struct ItemEditorView: View {
                 ForEach(CritterColor.allCases) { color in
                     Button {
                         draft.color = color
-                        draft.artName = nil
+                        syncStarterArt()
                     } label: {
                         Circle()
                             .fill(LinearGradient(colors: color.gradient, startPoint: .topLeading, endPoint: .bottomTrailing))
