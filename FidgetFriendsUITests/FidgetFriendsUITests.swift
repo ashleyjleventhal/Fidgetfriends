@@ -230,6 +230,10 @@ final class FidgetFriendsUITests: XCTestCase {
         XCTAssertTrue(fidget.isSelected)
         screenshot("13-draft-after-layout-change")
         tap("editor.cancel")
+        let discard = app.alerts["Throw away this toy?"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 5))
+        discard.buttons["Throw away"].tap()
+        XCTAssertTrue(fidget.waitForNonExistence(timeout: 5))
 
         let favoritesSidebar = element("sidebar.favorites")
         XCTAssertTrue(favoritesSidebar.waitForExistence(timeout: 5))
