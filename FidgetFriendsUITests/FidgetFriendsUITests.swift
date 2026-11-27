@@ -167,6 +167,9 @@ final class FidgetFriendsUITests: XCTestCase {
         tap("builder.buddyName")
         app.typeText("Bubbles")
         tap("onboarding.finish")
+        XCTAssertTrue(element("shelf.title").waitForExistence(timeout: 5))
+        app.terminate()
+        launch([])
         open("character", title: "My character")
 
         tap("builder.buddyName")
