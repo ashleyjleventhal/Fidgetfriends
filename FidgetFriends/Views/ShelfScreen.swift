@@ -81,17 +81,15 @@ struct ShelfScreen: View {
     }
 
     private var filterChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(CollectionFilter.allCases) { option in
-                    FunChip(title: option.label, systemImage: option.systemImage, isOn: filter == option) {
-                        withAnimation(.spring(response: 0.35)) { filter = option }
-                    }
-                    .accessibilityIdentifier("filter.\(option.rawValue)")
+        FlowLayout(spacing: 8) {
+            ForEach(CollectionFilter.allCases) { option in
+                FunChip(title: option.label, systemImage: option.systemImage, isOn: filter == option) {
+                    withAnimation(.spring(response: 0.35)) { filter = option }
                 }
+                .accessibilityIdentifier("filter.\(option.rawValue)")
             }
-            .padding(.vertical, 4)
         }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
@@ -138,7 +136,7 @@ struct ShelfScreen: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) {
                 addButton.fixedSize(horizontal: true, vertical: false)
-                shareButton
+                shareButton.fixedSize(horizontal: true, vertical: false)
             }
             VStack(spacing: 10) {
                 shareButton
@@ -156,7 +154,8 @@ struct ShelfScreen: View {
 
     private var shareButton: some View {
         Button { showingShare = true } label: {
-            Label("Share my collection", systemImage: "square.and.arrow.up").lineLimit(1).fixedSize()
+            Label("Share my collection", systemImage: "square.and.arrow.up")
+                .fixedSize(horizontal: false, vertical: true)
         }
         .buttonStyle(.chunky(Palette.grape, shadow: Palette.grapeDeep, compact: true))
         .disabled(store.items.isEmpty)

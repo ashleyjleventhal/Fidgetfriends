@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum CritterSpecies: String, Codable, CaseIterable, Identifiable {
-    case blob, cat, bunny, bear, frog, axolotl, star, popIt, cube, spinner
+    case blob, cat, bunny, bear, frog, axolotl, star, popIt, cube, spinner, otherSquishy, otherFidget
 
     var id: String { rawValue }
 
@@ -17,14 +17,15 @@ enum CritterSpecies: String, Codable, CaseIterable, Identifiable {
         case .popIt: return "Pop-it"
         case .cube: return "Fidget cube"
         case .spinner: return "Spinner"
+        case .otherSquishy, .otherFidget: return "Other"
         }
     }
 
     var isFidget: Bool { Self.fidgetChoices.contains(self) }
 
     static let characterChoices: [CritterSpecies] = [.blob, .cat, .bunny, .bear, .frog, .axolotl, .star]
-    static let squishyChoices: [CritterSpecies] = [.blob, .cat, .bunny, .bear, .frog, .axolotl, .star]
-    static let fidgetChoices: [CritterSpecies] = [.popIt, .cube, .spinner]
+    static let squishyChoices: [CritterSpecies] = [.blob, .otherSquishy, .cat, .bunny, .bear, .frog, .axolotl, .star]
+    static let fidgetChoices: [CritterSpecies] = [.popIt, .otherFidget, .cube, .spinner]
 }
 
 enum CritterColor: String, Codable, CaseIterable, Identifiable {
