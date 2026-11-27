@@ -1,0 +1,44 @@
+name: Publish web
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/publish-web.yml']
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: publish-web
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Publish only static web files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin gh-pages
+          git worktree add ../../pages origin/gh-pages
+          rsync -a --delete --exclude=.git dist/ ../../pages/
+          touch ../../pages/.nojekyll
+          cd ../../pages
+          git add --all
+          if ! git diff --cached --quiet; then
+            git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com commit -m "Publish web app from $GITHUB_SHA"
+            git push origin HEAD:gh-pages
+          fi
+          # GITHUB_TOKEN pushes do not trigger Pages. Request the build explicitly.
+          gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
