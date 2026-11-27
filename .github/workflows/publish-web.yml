@@ -6,6 +6,7 @@ on:
     paths: ['web/**', '.github/workflows/publish-web.yml']
 permissions:
   contents: write
+  pages: write
 concurrency:
   group: publish-web
   cancel-in-progress: false
@@ -39,3 +40,5 @@ jobs:
             git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com commit -m "Publish web app from $GITHUB_SHA"
             git push origin HEAD:gh-pages
           fi
+          # GITHUB_TOKEN pushes do not trigger Pages. Request the build explicitly.
+          gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
