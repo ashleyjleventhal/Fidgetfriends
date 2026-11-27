@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import type { Locator } from '@playwright/test';
 async function start(page: import('@playwright/test').Page, samples = true) {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Let’s make a little friend' })).toBeVisible();
@@ -8,6 +9,54 @@ async function start(page: import('@playwright/test').Page, samples = true) {
   await page.getByRole('button', { name: 'Meet my happy shelf' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
 }
+test('makes a buddy and first toys without typing, then finds the grown-up gate', async ({ page, hasTouch }) => {
+  const press = (target: Locator) => hasTouch ? target.tap() : target.click();
+  const dialog = page.getByRole('dialog');
+  await page.goto('/');
+  await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
+  const finishBuddy = dialog.getByRole('button', { name: 'Meet my happy shelf' });
+  await expect(finishBuddy).toBeInViewport({ ratio: 1 });
+  await press(dialog.getByRole('button', { name: 'Bunny', exact: true }));
+  const mint = dialog.getByRole('button', { name: 'Mint', exact: true });
+  expect((await mint.boundingBox())?.width).toBeGreaterThanOrEqual(44);
+  expect((await mint.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await press(mint);
+  await expect(mint).toHaveAttribute('aria-pressed', 'true');
+  await press(dialog.getByText('Start with 7 pretend toys to explore', { exact: true }));
+  await press(finishBuddy);
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByText('You + Pip')).toBeVisible();
+
+  const mobile = page.getByRole('navigation', { name: 'Mobile navigation' });
+  const isMobile = await mobile.isVisible();
+  const add = isMobile ? mobile.getByRole('button', { name: 'Add friend' }) : page.getByRole('button', { name: 'Add a little friend', exact: true });
+  const share = isMobile ? mobile.getByRole('button', { name: 'Share', exact: true }) : page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Share collection' });
+  await expect(share).toBeInViewport({ ratio: 1 });
+  expect((await share.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await expect(share).toBeDisabled();
+  await press(add);
+  const saveToy = dialog.getByRole('button', { name: 'Add to my shelf' });
+  await expect(saveToy).toBeInViewport({ ratio: 1 });
+  await press(dialog.getByRole('button', { name: 'Kitty', exact: true }));
+  await expect(dialog.getByRole('button', { name: 'Kitty', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await press(saveToy);
+  const kitten = page.getByRole('button', { name: 'View Kitty' });
+  await expect(kitten).toBeInViewport({ ratio: 1 });
+  await expect(kitten).toBeFocused();
+  await press(add);
+  const fidget = dialog.getByRole('button', { name: 'Fidget', exact: true });
+  await press(fidget);
+  const spinner = dialog.getByRole('button', { name: 'Spinner', exact: true });
+  await expect(spinner).toBeInViewport({ ratio: 1 });
+  await press(spinner);
+  await press(fidget);
+  await expect(spinner).toHaveAttribute('aria-pressed', 'true');
+  await press(saveToy);
+  await expect(page.getByRole('button', { name: 'View Spinner' })).toBeInViewport({ ratio: 1 });
+  await press(share);
+  await expect(dialog.getByRole('heading', { name: 'A little help from a grown-up' })).toBeVisible();
+  await expect(dialog.getByRole('img', { name: /Collection picture/ })).toHaveCount(0);
+});
 test('sets up a buddy, adds/edits/deletes toys and persists across reloads', async ({ page }) => {
   await start(page, false);
   await expect(page.getByRole('heading', { name: 'Your first little joy goes here' })).toBeVisible();
