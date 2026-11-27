@@ -70,6 +70,16 @@ test('very large text scales the app without sideways scrolling', async ({ page 
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
 });
 
+test('buddy editor fits without sideways scrolling at very large text', async ({ page }) => {
+  await page.goto('/');
+  await finishSetup(page);
+  await page.evaluate(() => { document.documentElement.style.fontSize = '53px'; });
+  await page.getByRole('button', { name: /Edit my buddy/ }).filter({ visible: true }).first().click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Kitty' })).toBeVisible();
+  expect(await dialog.evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
+});
+
 test('saved messages are announced through a live region that is already on the page', async ({ page }) => {
   await page.goto('/');
   await finishSetup(page);
