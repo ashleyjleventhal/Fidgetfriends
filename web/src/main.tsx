@@ -26,6 +26,21 @@ function ColorPicker({ value, onChange }: { value: Color; onChange: (c: Color) =
 function ShapePicker({ choices, color, value, onChange }: { choices: Species[]; color: Color; value: Species; onChange: (shape: Species) => void }) {
   return <div className="species-picks">{choices.map(shape => <button key={shape} type="button" aria-pressed={value === shape} aria-label={species[shape]} className={value === shape ? 'selected' : ''} onClick={() => onChange(shape)}><Critter species={shape} color={color}/><span>{species[shape]}</span></button>)}</div>;
 }
+function StarterShelf({ filled }: { filled: boolean }) {
+  return <svg viewBox="0 0 104 46" aria-hidden="true">
+    <rect x="3" y="2" width="98" height="42" rx="6" fill="#f3edf9" stroke="#9974b9" strokeWidth="3"/>
+    {filled && <>
+      <path d="M12 21v-8l5 4 5-4v8Z" fill="#e59bbd"/>
+      <rect x="28" y="10" width="13" height="11" rx="3" fill="#9bcdb3"/>
+      <path d="m54 9 2.7 4 4.5 1.2-3 3.4.3 4.4-4.5-1.8-4.5 1.8.3-4.4-3-3.4 4.5-1.2Z" fill="#e9b844"/>
+      <path d="M69 21v-5c0-4 4-6 9-6 6 0 9 3 9 6v5Z" fill="#ae91d6"/>
+      <path d="m16 41 1-9 6-4 7 4 1 9Z" fill="#8abde0"/>
+      <path d="M40 41v-3a7 7 0 0 1 3-6l-1-4c0-2 3-2 4 0l1 4h3l1-4c1-2 4-2 4 0l-1 4a7 7 0 0 1 3 6v3Z" fill="#d4a1de"/>
+      <path d="M67 41v-4a8 8 0 0 1 8-8h5a8 8 0 0 1 8 8v4Z" fill="#f1ab83"/>
+    </>}
+    <path d="M4 22h96" stroke="#9974b9" strokeWidth="3"/>
+  </svg>;
+}
 function BuddyEditor({ initial, onboarding = false, save, busy }: { initial?: Profile; onboarding?: boolean; save: (p: Profile, samples: boolean) => void; busy: boolean }) {
   const [profile, setProfile] = useState<Profile>(initial ?? { nickname: '', buddyName: 'Pip', look: defaultLook });
   const [samples, setSamples] = useState(true);
@@ -42,7 +57,12 @@ function BuddyEditor({ initial, onboarding = false, save, busy }: { initial?: Pr
     {onboarding && <p className="small center muted"><Icon name="lock" size={14}/> No accounts. No ads. Just your little world.</p>}
     </div>
     <div className="editor-actions">
-      {onboarding && <label className="check-label"><input type="checkbox" checked={samples} onChange={e => setSamples(e.target.checked)}/> Start with 7 pretend toys to explore</label>}
+      {onboarding && <div className="starter-choices" role="group" aria-label="Starter toys">
+        {([true, false] as const).map(filled => <button type="button" key={String(filled)} aria-pressed={samples === filled} onClick={() => setSamples(filled)}>
+          <StarterShelf filled={filled}/><span>{filled ? '7 pretend toys' : 'Empty shelf'}</span>
+          {samples === filled && <span className="starter-selected"><Icon name="check" size={14}/></span>}
+        </button>)}
+      </div>}
       <button className="button primary full" disabled={busy}>{busy ? 'Saving…' : onboarding ? 'Meet my happy shelf' : 'Save my buddy'}<Icon name={onboarding ? 'arrow' : 'check'}/></button>
     </div>
   </form>;
