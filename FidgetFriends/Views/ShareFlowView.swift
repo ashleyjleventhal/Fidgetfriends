@@ -194,9 +194,9 @@ struct ParentGateView: View {
             Text("Grown-ups only")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text("To send this picture, a grown-up please answer:")
+            Text(wrong ? "Not quite — try a new one." : "To send this picture, a grown-up please answer:")
                 .font(.fun(.headline, weight: .semibold))
-                .foregroundStyle(Palette.inkSoft)
+                .foregroundStyle(wrong ? Palette.coralDeep : Palette.inkSoft)
                 .multilineTextAlignment(.center)
             Text("What is \(Self.words[a]) times \(Self.words[b])?")
                 .font(.fun(.title2, weight: .heavy))
@@ -211,9 +211,6 @@ struct ParentGateView: View {
                 .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(wrong ? Palette.coralDeep : Palette.lilac, lineWidth: 3))
                 .accessibilityLabel("Answer \(entry)")
                 .accessibilityIdentifier("gate.entry")
-            if wrong {
-                Text("Not quite — try a new one.").font(.fun(.subheadline)).foregroundStyle(Palette.coralDeep)
-            }
             keypad
             HStack(spacing: 12) {
                 Button("Back", action: onCancel)
