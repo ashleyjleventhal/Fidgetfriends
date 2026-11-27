@@ -32,7 +32,11 @@ jobs:
         run: |
           git fetch origin gh-pages
           git worktree add ../../pages origin/gh-pages
-          rsync -a --delete --exclude=.git dist/ ../../pages/
+          # A fresh worktree can give same-size old files the build's mtime.
+          # Retain hashed assets so cached HTML and already-open tabs still load.
+          rsync -a --checksum --delete --exclude=.git --exclude=assets/ dist/ ../../pages/
+          rsync -a --checksum dist/assets/ ../../pages/assets/
+          cmp dist/index.html ../../pages/index.html
           touch ../../pages/.nojekyll
           cd ../../pages
           git add --all
