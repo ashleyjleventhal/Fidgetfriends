@@ -106,6 +106,93 @@ test('gives Other squishy different artwork from Mochi blob', async ({ page }) =
   expect(mochi.length).toBeGreaterThan(0);
   expect(await artwork('Other squishy')).not.toEqual(mochi);
 });
+
+test('keeps buddy and toy drafts usable across iPad layout changes', async ({ page }) => {
+  await page.setViewportSize({ width: 834, height: 1194 });
+  await page.goto('/');
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Close' })).toHaveCount(0);
+  await page.getByLabel('Buddy’s name').fill('Jellybean');
+  await page.setViewportSize({ width: 320, height: 834 });
+  await expect(page.getByLabel('Buddy’s name')).toHaveValue('Jellybean');
+  await page.getByRole('button', { name: 'Meet my happy shelf' }).click();
+  await expect(dialog).not.toBeVisible();
+
+  const mobile = page.getByRole('navigation', { name: 'Mobile navigation' });
+  await mobile.getByRole('button', { name: 'Add friend' }).click();
+  await page.getByLabel('Toy name').fill('Mermaid Pop');
+  await page.getByLabel('Private little notes').fill('Blue on the back');
+  await page.setViewportSize({ width: 1194, height: 834 });
+  await dialog.getByRole('button', { name: 'Fidget', exact: true }).click();
+  await page.setViewportSize({ width: 507, height: 834 });
+  await expect(page.getByLabel('Private little notes')).toHaveValue('Blue on the back');
+  await expect(dialog.getByRole('button', { name: 'Fidget', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await dialog.getByRole('button', { name: 'Add to my shelf' }).click();
+  await expect(page.getByRole('button', { name: 'View Mermaid Pop' })).toBeVisible();
+
+  for (const width of [1194, 981, 678, 507, 375, 320]) {
+    await page.setViewportSize({ width, height: 834 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
+  for (const target of [
+    mobile.getByRole('button', { name: 'Add friend' }),
+    page.getByRole('button', { name: 'Favorite Mermaid Pop' }),
+    page.getByRole('button', { name: 'Favorites', exact: true }),
+  ]) {
+    const bounds = (await target.boundingBox())!;
+    expect(bounds.width).toBeGreaterThanOrEqual(44);
+    expect(bounds.height).toBeGreaterThanOrEqual(44);
+  }
+  await mobile.getByRole('button', { name: 'Add friend' }).click();
+  const swatch = (await dialog.locator('.swatch').first().boundingBox())!;
+  expect(swatch.width).toBeGreaterThanOrEqual(44);
+  expect(swatch.height).toBeGreaterThanOrEqual(44);
+});
+
+test('keeps navigation, dialogs and poster actions inside available space', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 834 });
+  await start(page);
+  await page.addStyleTag({ content: ':root { --safe-top: 24px; --safe-right: 16px; --safe-bottom: 20px; --safe-left: 24px; }' });
+  const mobile = page.getByRole('navigation', { name: 'Mobile navigation' });
+  expect(await mobile.evaluate(el => getComputedStyle(el).paddingBottom)).toBe('29px');
+  expect(await mobile.evaluate(el => getComputedStyle(el).paddingLeft)).toBe('34px');
+  expect((await page.locator('.topbar').boundingBox())!.y).toBeGreaterThanOrEqual(24);
+  await mobile.getByRole('button', { name: 'Share' }).click();
+  const dialog = page.getByRole('dialog');
+  const question = (await dialog.getByText(/Grown-ups: what is/).textContent())!.match(/(\d+) × (\d+)/)!;
+  await dialog.getByRole('textbox').fill(String(Number(question[1]) * Number(question[2])));
+  await dialog.getByRole('button', { name: 'Make collection picture' }).click();
+  await expect(dialog.getByRole('img', { name: /Collection picture/ })).toBeVisible();
+  await page.setViewportSize({ width: 1194, height: 500 });
+  const bounds = (await dialog.boundingBox())!;
+  expect(bounds.y).toBeGreaterThanOrEqual(24);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(480);
+  expect(await dialog.evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+  await expect(dialog.getByRole('link', { name: 'Save picture' })).toBeInViewport();
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  const sidebar = page.locator('.sidebar');
+  expect((await sidebar.boundingBox())!.x).toBe(24);
+  const note = sidebar.getByRole('button', { name: /On this device/ });
+  await note.scrollIntoViewIfNeeded();
+  await expect(note).toBeInViewport();
+  await note.click();
+  await expect(dialog.getByRole('heading', { name: 'Your own little world' })).toBeVisible();
+});
+
+test('reopens the built shelf and saves a toy without a network connection', async ({ page, context }) => {
+  await start(page, false);
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  await context.setOffline(true);
+  await page.reload();
+  await page.getByRole('button', { name: 'Add my first friend' }).click();
+  await page.getByLabel('Toy name').fill('Offline friend');
+  await page.getByRole('button', { name: 'Add to my shelf' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'View Offline friend' })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit my buddy' }).click();
+  await expect(page.getByLabel('Buddy’s name')).toHaveValue('Bubbles');
+});
 test('sets up a buddy, adds/edits/deletes toys and persists across reloads', async ({ page }) => {
   await start(page, false);
   await expect(page.getByRole('heading', { name: 'Your first little joy goes here' })).toBeVisible();
