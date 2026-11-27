@@ -95,7 +95,7 @@ struct ItemEditorView: View {
                     colorPicker
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel(text: "Name", trailing: "Optional")
-                        FunTextField(placeholder: draft.species.label, text: $draft.name)
+                        FunTextField(placeholder: draft.species.label, text: $draft.name, axis: .vertical)
                             .accessibilityLabel("Toy name, optional")
                             .accessibilityIdentifier("editor.name")
                     }

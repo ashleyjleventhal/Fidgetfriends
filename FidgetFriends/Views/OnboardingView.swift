@@ -127,6 +127,7 @@ struct OnboardingView: View {
                     .accessibilityLabel("Back")
             }
             .buttonStyle(.chunky(.white, shadow: Palette.lilac, foreground: Palette.grape, fullWidth: false))
+            .accessibilityIdentifier("onboarding.buddyBack")
 
             Button { finish() } label: {
                 Label("To my shelf", systemImage: "checkmark")

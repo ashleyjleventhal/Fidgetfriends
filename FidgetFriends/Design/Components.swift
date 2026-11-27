@@ -67,9 +67,10 @@ struct FunTextField: View {
     let placeholder: String
     @Binding var text: String
     var maxLength = 24
+    var axis: Axis = .horizontal
 
     var body: some View {
-        TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkSoft))
+        TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkSoft), axis: axis)
             .accessibilityLabel(placeholder)
             .font(.fun(.title3))
             .foregroundStyle(Palette.ink)
@@ -78,7 +79,9 @@ struct FunTextField: View {
             .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white))
             .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Palette.lilac, lineWidth: 2.5))
             .onChange(of: text) { _, newValue in
-                if newValue.count > maxLength { text = String(newValue.prefix(maxLength)) }
+                let name = axis == .vertical ? newValue.split(whereSeparator: \.isNewline).joined(separator: " ") : newValue
+                let limited = String(name.prefix(maxLength))
+                if limited != newValue { text = limited }
             }
     }
 }

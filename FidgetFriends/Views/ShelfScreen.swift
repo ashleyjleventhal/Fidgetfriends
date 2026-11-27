@@ -190,18 +190,20 @@ struct ShelfScreen: View {
         .padding(.bottom, 8)
         .frame(maxWidth: 900)
         .frame(maxWidth: .infinity)
-        .background(LinearGradient(colors: [Palette.cream.opacity(0), Palette.cream.opacity(0.95), Palette.cream], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+        .background(Palette.cream)
     }
 
+    @ViewBuilder
     private var shareButton: some View {
-        Button { showingShare = true } label: {
-            Label("Share my collection", systemImage: "square.and.arrow.up")
-                .fixedSize(horizontal: false, vertical: true)
+        if !store.items.isEmpty {
+            Button { showingShare = true } label: {
+                Label("Share my collection", systemImage: "square.and.arrow.up")
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .buttonStyle(.chunky(Palette.grape, shadow: Palette.grapeDeep, compact: true))
+            .accessibilityIdentifier("shelf.share")
+            .accessibilityHint("Makes a picture of your toys to send with a grown-up's help")
         }
-        .buttonStyle(.chunky(Palette.grape, shadow: Palette.grapeDeep, compact: true))
-        .disabled(store.items.isEmpty)
-        .accessibilityIdentifier("shelf.share")
-        .accessibilityHint("Makes a picture of your toys to send with a grown-up's help")
     }
 
     private var addButton: some View {
