@@ -1,0 +1,68 @@
+import { test, expect } from '@playwright/test';
+async function start(page: import('@playwright/test').Page, samples = true) {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Let’s make a little friend' })).toBeVisible();
+  await page.getByLabel('Buddy’s name').fill('Bubbles');
+  await page.getByLabel('Your nickname').fill('PRIVATE NICKNAME');
+  if (!samples) await page.getByLabel('Start with 7 pretend toys').uncheck();
+  await page.getByRole('button', { name: 'Meet my happy shelf' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+}
+test('sets up a buddy, adds/edits/deletes toys and persists across reloads', async ({ page }) => {
+  await start(page, false);
+  await expect(page.getByRole('heading', { name: 'Your first little joy goes here' })).toBeVisible();
+  await page.getByRole('button', { name: 'Add my first friend' }).click();
+  await page.getByLabel('Toy name').fill('Cloud Nine');
+  await page.getByLabel('Private little notes').fill('PRIVATE NOTE');
+  await page.getByRole('button', { name: 'Soft', exact: true }).click();
+  await page.getByRole('button', { name: 'Add to my shelf' }).click();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'View Cloud Nine' })).toBeVisible();
+  await page.getByRole('button', { name: 'Favorite Cloud Nine', exact: true }).click();
+  await page.getByRole('button', { name: 'Favorites', exact: true }).click();
+  await page.getByRole('searchbox').fill('soft');
+  await expect(page.getByRole('button', { name: 'View Cloud Nine' })).toBeVisible();
+  await page.getByRole('button', { name: 'View Cloud Nine' }).click();
+  await expect(page.getByText('PRIVATE NOTE', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit little friend' }).click();
+  await page.getByLabel('Toy name').fill('Cloud Ten');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await page.getByRole('button', { name: 'View Cloud Ten' }).click();
+  await page.getByRole('button', { name: 'Remove from my shelf' }).click();
+  await page.getByRole('button', { name: 'Keep my friend' }).click();
+  await expect(page.getByRole('heading', { name: 'Cloud Ten' })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove from my shelf' }).click();
+  await page.getByRole('button', { name: 'Remove friend', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Your first little joy goes here' })).toBeVisible();
+});
+test('grown-up gate rejects a wrong answer and prepares a private PNG', async ({ page }) => {
+  await start(page);
+  const share = page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('button', { name: 'Share', exact: true });
+  if (await share.isVisible()) await share.click();
+  else await page.getByRole('button', { name: 'Share my collection', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox').fill('0');
+  await dialog.getByRole('button', { name: 'Make collection picture' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Not quite');
+  const question = await dialog.getByText(/Grown-ups: what is/).textContent();
+  const numbers = question!.match(/(\d+) × (\d+)/)!;
+  await dialog.getByRole('textbox').fill(String(Number(numbers[1]) * Number(numbers[2])));
+  await dialog.getByRole('button', { name: 'Make collection picture' }).click();
+  await expect(dialog.getByRole('img', { name: /Collection picture/ })).toBeVisible();
+  const download = page.waitForEvent('download');
+  await dialog.getByRole('link', { name: 'Save picture' }).click();
+  expect((await download).suggestedFilename()).toBe('fidget-friends-1.png');
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  if (await share.isVisible()) await share.click();
+  else await page.getByRole('button', { name: 'Share my collection', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'A little help from a grown-up' })).toBeVisible();
+});
+test('has no horizontal overflow and loads no third-party resources', async ({ page }) => {
+  const external: string[] = [];
+  page.on('request', request => { if (/^https?:/.test(request.url()) && new URL(request.url()).hostname !== '127.0.0.1') external.push(request.url()); });
+  await start(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole('searchbox').fill('no such friend');
+  await expect(page.getByRole('heading', { name: 'No little friends found' })).toBeVisible();
+  expect(external).toEqual([]);
+});
