@@ -14,14 +14,17 @@ struct ShelfScreen: View {
 
     private var activeFilter: CollectionFilter { favoritesOnly ? .faves : filter }
     private var visible: [CollectionItem] { store.items.filtered(activeFilter, search: search) }
+    private var needsFirstToy: Bool { !favoritesOnly && store.items.isEmpty }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
                 banner
-                SearchField(text: $search)
-                if !favoritesOnly { filterChips }
+                if !needsFirstToy {
+                    SearchField(text: $search)
+                    if !favoritesOnly { filterChips }
+                }
                 content
                 if !store.items.isEmpty {
                     Text("\(visible.count) of \(store.items.count) shown")
@@ -37,7 +40,9 @@ struct ShelfScreen: View {
         }
         .scrollDismissesKeyboard(.immediately)
         .background(WhimsyBackground())
-        .safeAreaInset(edge: .bottom) { bottomButtons }
+        .safeAreaInset(edge: .bottom) {
+            if !needsFirstToy { bottomButtons }
+        }
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(for: UUID.self) { id in ItemDetailScreen(itemID: id) }
         .sheet(isPresented: $showingEditor) { ItemEditorView(mode: .add) }
@@ -96,8 +101,8 @@ struct ShelfScreen: View {
 
     @ViewBuilder
     private var content: some View {
-        if store.items.isEmpty {
-            emptyState(title: "Your shelf is ready!", message: "Tap Add a squishy to put your first toy on the shelf.")
+        if needsFirstToy {
+            firstToyButton
         } else if visible.isEmpty {
             emptyState(title: favoritesOnly ? "No faves yet" : "No matches", message: favoritesOnly ? "Tap the heart on a toy to make it a fave." : "Try another word or filter.")
         } else {
@@ -107,6 +112,33 @@ struct ShelfScreen: View {
                 }
             }
         }
+    }
+
+    private var firstToyButton: some View {
+        Button { showingEditor = true } label: {
+            VStack(spacing: 12) {
+                CritterView(species: .blob, color: .bubblegum, eyes: .sparkle, mouth: .grin, accessory: .star)
+                    .frame(width: 130)
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "plus")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 48, height: 48)
+                            .background(Palette.grape, in: Circle())
+                            .overlay(Circle().strokeBorder(.white, lineWidth: 3))
+                    }
+                    .accessibilityHidden(true)
+                Text("Add my first toy")
+                    .font(.fun(.title2, weight: .heavy))
+                    .foregroundStyle(Palette.grapeDeep)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(24)
+            .stickerCard(border: Palette.grape)
+            .contentShape(RoundedRectangle(cornerRadius: 26))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("shelf.add")
     }
 
     @ViewBuilder

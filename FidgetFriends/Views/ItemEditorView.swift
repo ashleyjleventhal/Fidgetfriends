@@ -37,7 +37,10 @@ struct ItemEditorView: View {
     }
 
     private var isEditing: Bool { if case .edit = mode { return true } else { return false } }
-    private var canSave: Bool { !draft.name.trimmingCharacters(in: .whitespaces).isEmpty && photoState != .loading }
+    private var resolvedName: String {
+        let name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? draft.species.label : name
+    }
     private var speciesChoices: [CritterSpecies] { draft.kind == .squishy ? CritterSpecies.squishyChoices : CritterSpecies.fidgetChoices }
 
     private var previewPhoto: UIImage? {
@@ -51,11 +54,6 @@ struct ItemEditorView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     previewCard
-                    VStack(alignment: .leading, spacing: 8) {
-                        SectionLabel(text: "Name")
-                        FunTextField(placeholder: "Like \"Marshmallow\"", text: $draft.name)
-                            .accessibilityIdentifier("editor.name")
-                    }
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel(text: "It's a…")
                         HStack(spacing: 10) {
@@ -72,6 +70,12 @@ struct ItemEditorView: View {
                     }
                     speciesPicker
                     colorPicker
+                    VStack(alignment: .leading, spacing: 8) {
+                        SectionLabel(text: "Name", trailing: "Optional")
+                        FunTextField(placeholder: draft.species.label, text: $draft.name)
+                            .accessibilityLabel("Toy name, optional")
+                            .accessibilityIdentifier("editor.name")
+                    }
                     tagPicker
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel(text: "Private notes", trailing: "Never in shared pictures")
@@ -95,18 +99,25 @@ struct ItemEditorView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) {
+                Button { save() } label: {
+                    Label(isEditing ? "Save changes" : "Save toy", systemImage: "checkmark")
+                }
+                .buttonStyle(.chunky)
+                .disabled(photoState == .loading)
+                .accessibilityIdentifier("editor.save")
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
+                .background(Palette.cream.ignoresSafeArea(edges: .bottom))
+            }
             .background(WhimsyBackground(colors: [Palette.cream, Palette.peachPastel.opacity(0.5)], density: 0.6))
             .navigationTitle(isEditing ? "Edit toy" : "Add a squishy")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }.font(.fun(.body)).accessibilityIdentifier("editor.cancel")
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .font(.fun(.body, weight: .heavy))
-                        .disabled(!canSave)
-                        .accessibilityIdentifier("editor.save")
                 }
             }
             .onChange(of: photoSelection) { _, newValue in
@@ -243,7 +254,7 @@ struct ItemEditorView: View {
 
     private func save() {
         var item = draft
-        item.name = item.name.trimmingCharacters(in: .whitespaces)
+        item.name = resolvedName
         if let pickedPhoto {
             guard let name = store.savePhoto(pickedPhoto) else {
                 photoState = .failed("Couldn't save that photo. Try again or use the drawing.")

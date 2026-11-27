@@ -9,11 +9,6 @@ struct CharacterBuilder: View {
     var body: some View {
         VStack(spacing: 20) {
             preview
-            VStack(alignment: .leading, spacing: 8) {
-                SectionLabel(text: "Name your buddy")
-                FunTextField(placeholder: "Pip", text: $buddyName, maxLength: 16)
-                    .accessibilityIdentifier("builder.buddyName")
-            }
             optionRow("Shape", CritterSpecies.characterChoices, selected: look.species, id: "species") { species in
                 CritterView(species: species, color: look.color, eyes: .dots, mouth: .smile, showsShadow: false)
             } label: { $0.label } set: { look.species = $0 }
@@ -57,6 +52,12 @@ struct CharacterBuilder: View {
             .padding(16)
             .stickerCard()
             .accessibilityIdentifier("builder.cheeks")
+
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(text: "Name your buddy", trailing: "Optional")
+                FunTextField(placeholder: "Pip", text: $buddyName, maxLength: 16)
+                    .accessibilityIdentifier("builder.buddyName")
+            }
         }
     }
 

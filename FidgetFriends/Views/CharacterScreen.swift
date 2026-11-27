@@ -12,6 +12,11 @@ struct CharacterScreen: View {
         return profile.look != look || profile.buddyName != buddyName || profile.nickname != nickname
     }
 
+    private var greetingName: String {
+        let name = store.profile?.nickname ?? ""
+        return name.isEmpty ? "friend" : name
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -19,7 +24,7 @@ struct CharacterScreen: View {
                     .font(.system(.largeTitle, design: .rounded).weight(.black))
                     .foregroundStyle(Palette.ink)
                     .accessibilityIdentifier("character.title")
-                Text("Hi \(store.profile?.nickname ?? "friend")! Change your buddy any time.")
+                Text("Hi \(greetingName)! Change your buddy any time.")
                     .font(.fun(.headline, weight: .semibold))
                     .foregroundStyle(Palette.inkSoft)
                 CharacterBuilder(look: $look, buddyName: $buddyName)
@@ -60,8 +65,7 @@ struct CharacterScreen: View {
         profile.look = look
         let name = buddyName.trimmingCharacters(in: .whitespaces)
         profile.buddyName = name.isEmpty ? profile.buddyName : name
-        let nick = nickname.trimmingCharacters(in: .whitespaces)
-        profile.nickname = nick.isEmpty ? profile.nickname : nick
+        profile.nickname = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
         store.profile = profile
         savedBanner = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { savedBanner = false }
