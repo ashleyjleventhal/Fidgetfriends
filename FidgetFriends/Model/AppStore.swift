@@ -7,7 +7,11 @@ final class AppStore: ObservableObject {
     @Published private(set) var items: [CollectionItem] = [] { didSet { persist() } }
 
     let directory: URL
-    private var photoCache: [String: UIImage] = [:]
+    private let photoCache: NSCache<NSString, UIImage> = {
+        let cache = NSCache<NSString, UIImage>()
+        cache.countLimit = 40
+        return cache
+    }()
 
     private struct Snapshot: Codable {
         var profile: Profile?
@@ -88,7 +92,7 @@ final class AppStore: ObservableObject {
         do {
             try FileManager.default.createDirectory(at: photosDirectory, withIntermediateDirectories: true)
             try data.write(to: photosDirectory.appendingPathComponent(name), options: [.atomic, .completeFileProtection])
-            photoCache[name] = resized
+            photoCache.setObject(resized, forKey: name as NSString)
             return name
         } catch {
             return nil
@@ -97,14 +101,14 @@ final class AppStore: ObservableObject {
 
     func image(for item: CollectionItem) -> UIImage? {
         guard let name = item.photoFileName else { return nil }
-        if let cached = photoCache[name] { return cached }
+        if let cached = photoCache.object(forKey: name as NSString) { return cached }
         guard let image = UIImage(contentsOfFile: photosDirectory.appendingPathComponent(name).path) else { return nil }
-        photoCache[name] = image
+        photoCache.setObject(image, forKey: name as NSString)
         return image
     }
 
     private func deletePhoto(named name: String) {
-        photoCache[name] = nil
+        photoCache.removeObject(forKey: name as NSString)
         try? FileManager.default.removeItem(at: photosDirectory.appendingPathComponent(name))
     }
 
