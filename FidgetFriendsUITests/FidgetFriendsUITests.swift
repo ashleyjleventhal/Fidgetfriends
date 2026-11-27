@@ -255,6 +255,8 @@ final class FidgetFriendsUITests: XCTestCase {
     }
 
     func testReplacingFullToyNameKeepsPrefixOfPastedName() {
+        let replacement = "abcdefghijklmnopqrstuvwxyz"
+        app.launchEnvironment["UITEST_TOY_NAME_PASTE"] = replacement
         launch(["-uiTestReset", "-uiTestSkipOnboarding"])
         tap("shelf.add")
         tap("editor.name")
@@ -263,16 +265,38 @@ final class FidgetFriendsUITests: XCTestCase {
         name.typeText(original)
         XCTAssertEqual(name.value as? String, original)
 
-        let replacement = "abcdefghijklmnopqrstuvwxyz"
-        tap("editor.notes")
-        let notes = element("editor.notes")
-        notes.typeText(replacement)
-        notes.typeKey("a", modifierFlags: .command)
-        notes.typeKey("c", modifierFlags: .command)
+        setTestPasteboard()
         tap("editor.name")
-        name.typeKey("a", modifierFlags: .command)
-        name.typeKey("v", modifierFlags: .command)
+        pasteFromEditMenu(in: name, replacingAll: true)
         XCTAssertEqual(name.value as? String, String(replacement.prefix(24)))
+    }
+
+    func testPastingMultilineToyNameCollapsesWhitespaceBeforeApplyingLimit() {
+        app.launchEnvironment["UITEST_TOY_NAME_PASTE"] = "\n  Squishy\n\n  Bunny \n  With  A  Tiny Hat \n"
+        launch(["-uiTestReset", "-uiTestSkipOnboarding"])
+        tap("shelf.add")
+        setTestPasteboard()
+        tap("editor.name")
+        let name = element("editor.name")
+        pasteFromEditMenu(in: name)
+        XCTAssertEqual(name.value as? String, String("Squishy Bunny With A Tiny Hat".prefix(24)))
+    }
+
+    private func setTestPasteboard() {
+        tap("editor.testPasteboard")
+        XCTAssertEqual(element("editor.testPasteboard").value as? String, "Ready")
+    }
+
+    private func pasteFromEditMenu(in field: XCUIElement, replacingAll: Bool = false) {
+        field.press(forDuration: 0.8)
+        if replacingAll {
+            let selectAll = app.menuItems["Select All"].firstMatch
+            XCTAssertTrue(selectAll.waitForExistence(timeout: 5))
+            selectAll.tap()
+        }
+        let paste = app.menuItems["Paste"].firstMatch
+        XCTAssertTrue(paste.waitForExistence(timeout: 5))
+        paste.tap()
     }
 
     func testReturnInsideFullToyNameDoesNotChangeSavedName() {

@@ -79,8 +79,17 @@ struct FunTextField: View {
             .padding(.vertical, 14)
             .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white))
             .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Palette.lilac, lineWidth: 2.5))
-            .onChange(of: text) { _, newValue in
-                let name = axis == .vertical ? newValue.filter { !$0.isNewline } : newValue
+            .onChange(of: text) { oldValue, newValue in
+                let name: String
+                if axis == .vertical, newValue.contains(where: \.isNewline) {
+                    if oldValue.count == maxLength, newValue.filter({ !$0.isNewline }) == oldValue {
+                        name = oldValue
+                    } else {
+                        name = newValue.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+                    }
+                } else {
+                    name = newValue
+                }
                 let limited = String(name.prefix(maxLength))
                 if limited != newValue { text = limited }
             }

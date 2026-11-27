@@ -144,6 +144,13 @@ struct ItemEditorView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", action: cancel).font(.fun(.body)).accessibilityIdentifier("editor.cancel")
                 }
+                #if DEBUG
+                if let pasteText = ProcessInfo.processInfo.environment["UITEST_TOY_NAME_PASTE"] {
+                    ToolbarItem(placement: .primaryAction) {
+                        TestPasteboardButton(text: pasteText)
+                    }
+                }
+                #endif
             }
             .onChange(of: photoSelection) { _, newValue in
                 guard let newValue else { return }
@@ -319,6 +326,22 @@ struct ItemEditorView: View {
         dismiss()
     }
 }
+
+#if DEBUG
+private struct TestPasteboardButton: View {
+    let text: String
+    @State private var isReady = false
+
+    var body: some View {
+        Button("Set test clipboard") {
+            UIPasteboard.general.string = text
+            isReady = UIPasteboard.general.string == text
+        }
+        .accessibilityIdentifier("editor.testPasteboard")
+        .accessibilityValue(isReady ? "Ready" : "Not ready")
+    }
+}
+#endif
 
 private struct SheetDismissObserver: UIViewControllerRepresentable {
     let isDirty: Bool
