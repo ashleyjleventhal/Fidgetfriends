@@ -4,9 +4,9 @@ struct OnboardingView: View {
     @EnvironmentObject private var store: AppStore
     @State private var step = 0
     @State private var nickname = ""
-    @State private var buddyName = "Pip"
+    @State private var buddyName = ""
     @State private var look = CharacterLook()
-    @State private var addSamples = true
+    @State private var addSamples = false
 
     var body: some View {
         ZStack {
@@ -25,6 +25,11 @@ struct OnboardingView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) {
+                if step == 2 {
+                    buildActions
+                }
+            }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: step)
     }
@@ -58,22 +63,24 @@ struct OnboardingView: View {
             Label("No accounts. The app never uploads your collection.", systemImage: "lock.fill")
                 .font(.fun(.footnote))
                 .foregroundStyle(Palette.grape)
-            Button("Let's make my buddy!") { step = 1 }
-                .buttonStyle(.chunky)
-                .accessibilityIdentifier("onboarding.start")
+            Button { step = 1 } label: {
+                Label("Make my buddy", systemImage: "arrow.right")
+            }
+            .buttonStyle(.chunky)
+            .accessibilityIdentifier("onboarding.start")
         }
         .padding(.top, 20)
     }
 
     private var nameStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Hi there! What should we call you?")
+            Text("Hi, friend!")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text("A first name or a fun nickname. The app keeps it on this device and never puts it in pictures you share.")
+            Text("You can add a nickname or keep going. Your nickname stays on this device.")
                 .font(.fun(.body, weight: .semibold))
                 .foregroundStyle(Palette.inkSoft)
-            FunTextField(placeholder: "Nickname", text: $nickname, maxLength: 16)
+            FunTextField(placeholder: "Nickname (optional)", text: $nickname, maxLength: 16)
                 .textContentType(.nickname)
                 .accessibilityIdentifier("onboarding.nickname")
             Toggle(isOn: $addSamples) {
@@ -83,10 +90,11 @@ struct OnboardingView: View {
             .padding(16)
             .stickerCard()
             .accessibilityIdentifier("onboarding.samples")
-            Button("Next") { step = 2 }
-                .buttonStyle(.chunky)
-                .disabled(nickname.trimmingCharacters(in: .whitespaces).isEmpty)
-                .accessibilityIdentifier("onboarding.next")
+            Button { step = 2 } label: {
+                Label("Next", systemImage: "arrow.right")
+            }
+            .buttonStyle(.chunky)
+            .accessibilityIdentifier("onboarding.next")
             Button("Back") { step = 0 }
                 .font(.fun(.headline))
                 .frame(maxWidth: .infinity)
@@ -95,27 +103,41 @@ struct OnboardingView: View {
 
     private var buildStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Make your squishy buddy!")
+            Text("Make your buddy!")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
             CharacterBuilder(look: $look, buddyName: $buddyName)
-            Button("All done — to my shelf!") { finish() }
-                .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep))
-                .accessibilityIdentifier("onboarding.finish")
-            Button("Back") { step = 1 }
-                .font(.fun(.headline))
-                .frame(maxWidth: .infinity)
         }
     }
 
+    private var buildActions: some View {
+        HStack(spacing: 12) {
+            Button { step = 1 } label: {
+                Image(systemName: "chevron.left")
+                    .accessibilityLabel("Back")
+            }
+            .buttonStyle(.chunky(.white, shadow: Palette.lilac, foreground: Palette.grape, fullWidth: false))
+
+            Button { finish() } label: {
+                Label("To my shelf", systemImage: "checkmark")
+            }
+            .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep))
+            .accessibilityIdentifier("onboarding.finish")
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
+        .frame(maxWidth: 640)
+        .frame(maxWidth: .infinity)
+        .background(Palette.cream.ignoresSafeArea(edges: .bottom))
+    }
+
     private func finish() {
-        let name = buddyName.trimmingCharacters(in: .whitespaces)
         if addSamples && store.items.isEmpty {
             CollectionItem.samples.forEach(store.add)
         }
         store.profile = Profile(
-            nickname: nickname.trimmingCharacters(in: .whitespaces),
-            buddyName: name.isEmpty ? "Pip" : name,
+            nickname: nickname.trimmingCharacters(in: .whitespacesAndNewlines),
+            buddyName: Profile.resolvedBuddyName(buddyName),
             look: look
         )
     }

@@ -154,13 +154,20 @@ struct CharacterLook: Codable, Equatable {
 }
 
 struct Profile: Codable, Equatable {
+    static let defaultBuddyName = "Pip"
+
     var nickname: String
     var buddyName: String
     var look: CharacterLook
 
     var shelfTitle: String { "My happy shelf" }
 
-    static let sample = Profile(nickname: "Juniper", buddyName: "Pip", look: CharacterLook())
+    static func resolvedBuddyName(_ input: String) -> String {
+        let name = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? defaultBuddyName : name
+    }
+
+    static let sample = Profile(nickname: "Juniper", buddyName: defaultBuddyName, look: CharacterLook())
 }
 
 enum ItemKind: String, Codable, CaseIterable, Identifiable {
@@ -229,7 +236,7 @@ enum CollectionFilter: String, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .all: return "All"
-        case .squishys: return "Squishys"
+        case .squishys: return "Squishies"
         case .fidgets: return "Fidgets"
         case .faves: return "Faves"
         }

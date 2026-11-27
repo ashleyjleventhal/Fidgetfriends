@@ -1,5 +1,9 @@
 import SwiftUI
 
+func counted(_ count: Int, singular: String, plural: String) -> String {
+    "\(count) \(count == 1 ? singular : plural)"
+}
+
 struct ChunkyButtonStyle: ButtonStyle {
     var color: Color = Palette.grape
     var shadow: Color = Palette.grapeDeep

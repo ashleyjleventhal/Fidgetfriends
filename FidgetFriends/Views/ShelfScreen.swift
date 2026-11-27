@@ -14,14 +14,25 @@ struct ShelfScreen: View {
 
     private var activeFilter: CollectionFilter { favoritesOnly ? .faves : filter }
     private var visible: [CollectionItem] { store.items.filtered(activeFilter, search: search) }
+    private var needsFirstToy: Bool { !favoritesOnly && store.items.isEmpty }
+    private var toyCountLabel: String {
+        if favoritesOnly {
+            return "\(counted(store.favoriteCount, singular: "fave", plural: "faves"))!"
+        }
+        let squishies = counted(store.squishyCount, singular: "squishy", plural: "squishies")
+        let fidgets = counted(store.fidgetCount, singular: "fidget", plural: "fidgets")
+        return "\(squishies) & \(fidgets)"
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
                 banner
-                SearchField(text: $search)
-                if !favoritesOnly { filterChips }
+                if !needsFirstToy {
+                    SearchField(text: $search)
+                    if !favoritesOnly { filterChips }
+                }
                 content
                 if !store.items.isEmpty {
                     Text("\(visible.count) of \(store.items.count) shown")
@@ -37,7 +48,9 @@ struct ShelfScreen: View {
         }
         .scrollDismissesKeyboard(.immediately)
         .background(WhimsyBackground())
-        .safeAreaInset(edge: .bottom) { bottomButtons }
+        .safeAreaInset(edge: .bottom) {
+            if !needsFirstToy { bottomButtons }
+        }
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(for: UUID.self) { id in ItemDetailScreen(itemID: id) }
         .sheet(isPresented: $showingShare) { ShareFlowView(items: store.items) }
@@ -49,7 +62,7 @@ struct ShelfScreen: View {
                 .font(.system(.largeTitle, design: .rounded).weight(.black))
                 .foregroundStyle(Palette.ink)
                 .accessibilityIdentifier("shelf.title")
-            Text(favoritesOnly ? "The ones you love the most" : "\(store.items.count) tiny besties. One happy collection.")
+            Text(favoritesOnly ? "The ones you love the most" : "\(counted(store.items.count, singular: "tiny bestie", plural: "tiny besties")). One happy collection.")
                 .font(.fun(.headline, weight: .semibold))
                 .foregroundStyle(Palette.inkSoft)
         }
@@ -58,7 +71,7 @@ struct ShelfScreen: View {
     private var banner: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(favoritesOnly ? "\(store.favoriteCount) faves!" : "\(store.squishyCount) squishys & \(store.fidgetCount) fidgets")
+                Text(toyCountLabel)
                     .font(.fun(.title2, weight: .heavy))
                     .foregroundStyle(Palette.ink)
                 Text("Good things come in squishy shapes.")
@@ -77,6 +90,7 @@ struct ShelfScreen: View {
         )
         .overlay(SparkleSprinkles(color: Palette.coral))
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("shelf.counts")
     }
 
     private var filterChips: some View {
@@ -93,8 +107,8 @@ struct ShelfScreen: View {
 
     @ViewBuilder
     private var content: some View {
-        if store.items.isEmpty {
-            emptyState(title: "Your shelf is ready!", message: "Tap Add a squishy to put your first toy on the shelf.")
+        if needsFirstToy {
+            firstToyButton
         } else if visible.isEmpty {
             emptyState(title: favoritesOnly ? "No faves yet" : "No matches", message: favoritesOnly ? "Tap the heart on a toy to make it a fave." : "Try another word or filter.")
         } else {
@@ -104,6 +118,33 @@ struct ShelfScreen: View {
                 }
             }
         }
+    }
+
+    private var firstToyButton: some View {
+        Button { showingEditor = true } label: {
+            VStack(spacing: 12) {
+                CritterView(species: .blob, color: .bubblegum, eyes: .sparkle, mouth: .grin, accessory: .star)
+                    .frame(width: 130)
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "plus")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 48, height: 48)
+                            .background(Palette.grape, in: Circle())
+                            .overlay(Circle().strokeBorder(.white, lineWidth: 3))
+                    }
+                    .accessibilityHidden(true)
+                Text("Add my first toy")
+                    .font(.fun(.title2, weight: .heavy))
+                    .foregroundStyle(Palette.grapeDeep)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(24)
+            .stickerCard(border: Palette.grape)
+            .contentShape(RoundedRectangle(cornerRadius: 26))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("shelf.add")
     }
 
     @ViewBuilder

@@ -30,7 +30,7 @@ final class FidgetFriendsUITests: XCTestCase {
         let target = element(id)
         XCTAssertTrue(target.waitForExistence(timeout: timeout), "Missing \(id)")
         var swipes = 0
-        while (!target.isHittable || isCoveredByShelfButtons(target)) && swipes < 6 {
+        while (!target.isHittable || isCoveredByBottomActions(target)) && swipes < 6 {
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -220)))
             swipes += 1
@@ -38,9 +38,17 @@ final class FidgetFriendsUITests: XCTestCase {
         target.tap()
     }
 
-    private func isCoveredByShelfButtons(_ target: XCUIElement) -> Bool {
-        guard target.identifier.hasPrefix("item.card") else { return false }
-        let bar = [element("shelf.share"), element("shelf.add")].filter(\.exists).map(\.frame.minY).min() ?? .infinity
+    private func isCoveredByBottomActions(_ target: XCUIElement) -> Bool {
+        let actions: [String]
+        switch target.identifier {
+        case let id where id.hasPrefix("item.card"):
+            actions = ["shelf.share", "shelf.add"]
+        case let id where id.hasPrefix("editor.") && id != "editor.save":
+            actions = ["editor.save"]
+        default:
+            return false
+        }
+        let bar = actions.map { element($0) }.filter(\.exists).map(\.frame.minY).min() ?? .infinity
         return target.frame.maxY > bar - 8
     }
 
@@ -59,6 +67,7 @@ final class FidgetFriendsUITests: XCTestCase {
         tap("onboarding.start")
         tap("onboarding.nickname")
         app.typeText("Juniper")
+        tap("onboarding.samples")
         tap("onboarding.next")
         tap("builder.species.cat")
         tap("builder.color.mint")
@@ -72,19 +81,76 @@ final class FidgetFriendsUITests: XCTestCase {
 
         open("character", title: "My character")
         XCTAssertTrue(element("character.title").waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Hi Juniper! Change your buddy any time."].exists)
         XCTAssertTrue(element("builder.species.cat").isSelected)
         XCTAssertTrue(element("builder.accessory.headphones").isSelected)
         screenshot("04-my-character")
     }
 
+    func testFirstRunAddsAPicturedToyWithoutTyping() {
+        launch(["-uiTestReset"])
+        tap("onboarding.start")
+        let next = element("onboarding.next")
+        XCTAssertTrue(next.waitForExistence(timeout: 3))
+        XCTAssertTrue(next.isEnabled)
+        next.tap()
+
+        let finish = element("onboarding.finish")
+        XCTAssertTrue(finish.waitForExistence(timeout: 3))
+        XCTAssertTrue(finish.isHittable, "Finishing should not require scrolling through customization")
+        tap("builder.species.cat")
+        tap("builder.color.mint")
+        XCTAssertTrue(element("builder.color.mint").isSelected)
+        XCTAssertTrue(finish.isHittable)
+        finish.tap()
+
+        let add = app.buttons["shelf.add"].firstMatch
+        XCTAssertTrue(add.waitForExistence(timeout: 3))
+        XCTAssertTrue(add.isHittable)
+        XCTAssertEqual(add.label, "Add my first toy")
+        XCTAssertFalse(element("shelf.share").exists)
+        XCTAssertFalse(element("item.card.Peachy").exists)
+        XCTAssertTrue(element("shelf.counts").label.contains("0 squishies & 0 fidgets"))
+        screenshot("first-run-empty-shelf")
+        add.tap()
+
+        let save = element("editor.save")
+        XCTAssertTrue(save.waitForExistence(timeout: 3))
+        XCTAssertTrue(save.isEnabled, "A toy name should not be required")
+        tap("editor.species.bunny")
+        tap("editor.color.sky")
+        XCTAssertTrue(element("editor.color.sky").isSelected)
+        XCTAssertTrue(save.isHittable)
+        save.tap()
+
+        let bunny = element("item.card.Bunny")
+        XCTAssertTrue(bunny.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["1 tiny bestie. One happy collection."].exists)
+        XCTAssertTrue(element("shelf.counts").label.contains("1 squishy & 0 fidgets"))
+        screenshot("first-run-bunny-on-shelf")
+        app.terminate()
+        launch([])
+        XCTAssertTrue(bunny.waitForExistence(timeout: 5))
+        tap("shelf.share")
+        let poster = element("share.poster")
+        XCTAssertTrue(poster.waitForExistence(timeout: 5))
+        XCTAssertEqual(poster.label, "Collection picture with 1 toy")
+        tap("share.close")
+
+        open("character", title: "My character")
+        XCTAssertTrue(app.staticTexts["Hi friend! Change your buddy any time."].waitForExistence(timeout: 3))
+        XCTAssertTrue(element("builder.species.cat").isSelected)
+        XCTAssertTrue(element("builder.color.mint").isSelected)
+    }
+
     func testAddedToyPersistsAfterRelaunch() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding"])
         tap("shelf.add")
-        tap("editor.name")
-        app.typeText("Marshmallow")
         tap("editor.species.bunny")
         tap("editor.color.sky")
         tap("editor.tag.soft")
+        tap("editor.name")
+        app.textFields["editor.name"].typeText("Marshmallow")
         screenshot("05-add-toy")
         tap("editor.save")
         XCTAssertTrue(element("item.card.Marshmallow").waitForExistence(timeout: 3))
@@ -95,8 +161,35 @@ final class FidgetFriendsUITests: XCTestCase {
         screenshot("06-after-relaunch")
     }
 
+    func testClearingCustomBuddyNameRestoresDefault() {
+        launch(["-uiTestReset"])
+        tap("onboarding.start")
+        tap("onboarding.next")
+        tap("builder.buddyName")
+        app.typeText("Bubbles")
+        tap("onboarding.finish")
+        XCTAssertTrue(element("shelf.title").waitForExistence(timeout: 5))
+        app.terminate()
+        launch([])
+        open("character", title: "My character")
+
+        tap("builder.buddyName")
+        let field = app.textFields["builder.buddyName"]
+        XCTAssertEqual(field.value as? String, "Bubbles")
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: "Bubbles".count))
+        tap("character.save")
+        app.terminate()
+        launch([])
+        open("character", title: "My character")
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        XCTAssertEqual(field.value as? String, "Pip")
+    }
+
     func testFavoriteAndFilterNavigation() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
+        XCTAssertTrue(element("shelf.counts").waitForExistence(timeout: 3))
+        XCTAssertTrue(element("shelf.counts").label.contains("5 squishies & 2 fidgets"))
         tap("filter.fidgets")
         XCTAssertTrue(element("item.card.Rainbow Pop").waitForExistence(timeout: 3))
         XCTAssertFalse(element("item.card.Peachy").exists)
