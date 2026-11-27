@@ -28,4 +28,9 @@
   .editor-modal .item-preview .critter{width:110px;height:106px}
   .mobile-nav button{justify-content:center;min-height:48px;font-size:11px;color:#79559e;touch-action:manipulation}
 }
+@media(max-height:400px){
+  .editor-modal[open]{display:block;overflow-y:auto}
+  .editor-modal .modal-head{position:static}
+  .editor-fields{overflow:visible}
+}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

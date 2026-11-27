@@ -57,6 +57,19 @@ test('makes a buddy and first toys without typing, then finds the grown-up gate'
   await expect(dialog.getByRole('heading', { name: 'A little help from a grown-up' })).toBeVisible();
   await expect(dialog.getByRole('img', { name: /Collection picture/ })).toHaveCount(0);
 });
+test('scrolls and saves a buddy in a very short landscape viewport', async ({ page, hasTouch }) => {
+  await page.setViewportSize({ width: 320, height: 160 });
+  await page.goto('/');
+  const dialog = page.getByRole('dialog');
+  const finish = dialog.getByRole('button', { name: 'Meet my happy shelf' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveCSS('overflow-y', 'auto');
+  await dialog.evaluate(sheet => { sheet.scrollTop = sheet.scrollHeight; });
+  await expect(finish).toBeInViewport({ ratio: 1 });
+  if (hasTouch) await finish.tap();
+  else await finish.click();
+  await expect(dialog).not.toBeVisible();
+});
 test('sets up a buddy, adds/edits/deletes toys and persists across reloads', async ({ page }) => {
   await start(page, false);
   await expect(page.getByRole('heading', { name: 'Your first little joy goes here' })).toBeVisible();
