@@ -121,7 +121,7 @@ struct ShelfScreen: View {
     }
 
     private var firstToyButton: some View {
-        Button { showingEditor = true } label: {
+        Button(action: onAddToy) {
             VStack(spacing: 12) {
                 CritterView(species: .blob, color: .bubblegum, eyes: .sparkle, mouth: .grin, accessory: .star)
                     .frame(width: 130)
