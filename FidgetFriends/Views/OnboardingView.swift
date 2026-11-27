@@ -55,7 +55,7 @@ struct OnboardingView: View {
                 .font(.fun(.title3, weight: .semibold))
                 .foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center)
-            Label("Everything stays on this device. No accounts.", systemImage: "lock.fill")
+            Label("No accounts. The app never uploads your collection.", systemImage: "lock.fill")
                 .font(.fun(.footnote))
                 .foregroundStyle(Palette.grape)
             Button("Let's make my buddy!") { step = 1 }
@@ -70,7 +70,7 @@ struct OnboardingView: View {
             Text("Hi there! What should we call you?")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text("A first name or a fun nickname. It stays on this device and is never put in pictures you share.")
+            Text("A first name or a fun nickname. The app keeps it on this device and never puts it in pictures you share.")
                 .font(.fun(.body, weight: .semibold))
                 .foregroundStyle(Palette.inkSoft)
             FunTextField(placeholder: "Nickname", text: $nickname, maxLength: 16)

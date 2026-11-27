@@ -140,7 +140,7 @@ private struct WideSidebar: View {
                 .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Palette.sunshine))
                 .overlay(SparkleSprinkles(color: Palette.coral))
             }
-            Label("Your collection stays on this iPad.", systemImage: "lock.fill")
+            Label("No accounts. The app never uploads your collection.", systemImage: "lock.fill")
                 .font(.fun(.footnote))
                 .foregroundStyle(Palette.grape)
         }
