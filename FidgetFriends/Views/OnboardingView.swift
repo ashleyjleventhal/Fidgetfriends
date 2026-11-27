@@ -77,7 +77,7 @@ struct OnboardingView: View {
             Text("Hi, friend!")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
-            Text("You can add a nickname or keep going. Your nickname stays on this device.")
+            Text("Add a nickname or keep going. Shared pictures leave it out. Your device may back up app data.")
                 .font(.fun(.body, weight: .semibold))
                 .foregroundStyle(Palette.inkSoft)
             FunTextField(placeholder: "Nickname (optional)", text: $nickname, maxLength: 16)

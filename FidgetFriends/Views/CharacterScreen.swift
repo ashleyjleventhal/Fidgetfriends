@@ -29,7 +29,7 @@ struct CharacterScreen: View {
                     .foregroundStyle(Palette.inkSoft)
                 CharacterBuilder(look: $look, buddyName: $buddyName)
                 VStack(alignment: .leading, spacing: 8) {
-                    SectionLabel(text: "Your nickname", trailing: "Only on this device")
+                    SectionLabel(text: "Your nickname", trailing: "Not added to shared pictures")
                     FunTextField(placeholder: "Nickname", text: $nickname, maxLength: 16)
                         .accessibilityIdentifier("character.nickname")
                 }
