@@ -70,6 +70,16 @@ test('scrolls and saves a buddy in a very short landscape viewport', async ({ pa
   else await finish.click();
   await expect(dialog).not.toBeVisible();
 });
+test('gives Other squishy different artwork from Mochi blob', async ({ page }) => {
+  await start(page, false);
+  await page.getByRole('button', { name: 'Add my first friend' }).click();
+  const dialog = page.getByRole('dialog');
+  const artwork = (name: string) => dialog.getByRole('button', { name, exact: true })
+    .locator('svg path').evaluateAll(paths => paths.map(path => path.getAttribute('d')));
+  const mochi = await artwork('Mochi blob');
+  expect(mochi.length).toBeGreaterThan(0);
+  expect(await artwork('Other squishy')).not.toEqual(mochi);
+});
 test('sets up a buddy, adds/edits/deletes toys and persists across reloads', async ({ page }) => {
   await start(page, false);
   await expect(page.getByRole('heading', { name: 'Your first little joy goes here' })).toBeVisible();
