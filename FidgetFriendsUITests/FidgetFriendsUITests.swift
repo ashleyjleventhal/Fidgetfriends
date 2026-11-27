@@ -28,14 +28,23 @@ final class FidgetFriendsUITests: XCTestCase {
 
     private func tap(_ id: String, timeout: TimeInterval = 5) {
         let target = element(id)
-        XCTAssertTrue(target.waitForExistence(timeout: timeout), "Missing \(id)")
+        if !id.hasPrefix("builder.") {
+            XCTAssertTrue(target.waitForExistence(timeout: timeout), "Missing \(id)")
+        }
+        reveal(target)
+        XCTAssertTrue(target.exists, "Missing \(id)")
+        target.tap()
+    }
+
+    private func reveal(_ target: XCUIElement) {
         var swipes = 0
         while (!target.isHittable || isCoveredByBottomActions(target)) && swipes < 6 {
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+            let keyboard = app.keyboards.firstMatch
+            let scrollStart = keyboard.exists ? min(0.6, (keyboard.frame.minY - app.frame.minY - 40) / app.frame.height) : 0.6
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: scrollStart))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -220)))
             swipes += 1
         }
-        target.tap()
     }
 
     private func isCoveredByBottomActions(_ target: XCUIElement) -> Bool {
@@ -45,6 +54,8 @@ final class FidgetFriendsUITests: XCTestCase {
             actions = ["shelf.share", "shelf.add"]
         case let id where id.hasPrefix("editor.") && id != "editor.save":
             actions = ["editor.save"]
+        case let id where id.hasPrefix("builder."):
+            actions = ["character.save", "onboarding.finish"]
         default:
             return false
         }
@@ -72,6 +83,7 @@ final class FidgetFriendsUITests: XCTestCase {
         tap("builder.species.cat")
         tap("builder.color.mint")
         tap("builder.eyes.happy")
+        reveal(element("builder.accessory.none"))
         tap("builder.accessory.headphones")
         screenshot("02-character-builder")
         tap("onboarding.finish")
@@ -206,6 +218,7 @@ final class FidgetFriendsUITests: XCTestCase {
 
         app.terminate()
         launch(accessibilitySize)
+        reveal(element("builder.buddyName"))
         XCTAssertTrue(element("builder.buddyName").waitForExistence(timeout: 5))
         XCTAssertEqual(element("builder.buddyName").value as? String, buddy)
         XCTAssertTrue(element("builder.species.cat").isSelected)
@@ -315,7 +328,10 @@ final class FidgetFriendsUITests: XCTestCase {
         tap("editor.removePhoto")
         XCTAssertEqual(element("editor.photo").label, "Add my photo")
         tap("editor.save")
-        XCTAssertTrue(element("item.card.Peachy").waitForExistence(timeout: 5))
+        XCTAssertTrue(element("editor.save").waitForNonExistence(timeout: 5))
+        let toy = element("item.card.Peachy")
+        reveal(toy)
+        XCTAssertTrue(toy.waitForExistence(timeout: 5))
     }
 
     private func assertFitsScreen(_ target: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
@@ -401,6 +417,7 @@ final class FidgetFriendsUITests: XCTestCase {
         openGate()
         if atLargestType {
             let heading = element("gate.heading")
+            let question = element("gate.question")
             XCTAssertTrue(heading.isHittable)
             XCTAssertTrue(question.isHittable)
             let toolbarBottom = app.navigationBars["Share my collection"].frame.maxY
@@ -413,6 +430,12 @@ final class FidgetFriendsUITests: XCTestCase {
             assertFitsScreen(back)
             assertFitsScreen(check)
             XCTAssertGreaterThanOrEqual(check.frame.minY, back.frame.maxY)
+            tryAnsweringGate()
+            let activity = app.otherElements["ActivityListView"].firstMatch
+            XCTAssertTrue(activity.waitForExistence(timeout: 8) || shareSheet.waitForExistence(timeout: 2),
+                          "System share sheet did not appear")
+            screenshot("11-system-share-sheet")
+            return
         }
         screenshot("10-grown-up-gate")
         let firstKey = element("gate.key.1")
