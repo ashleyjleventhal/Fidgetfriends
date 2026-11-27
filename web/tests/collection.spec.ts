@@ -252,6 +252,43 @@ test('has no horizontal overflow and loads no third-party resources', async ({ p
   await expect(page.getByRole('heading', { name: 'No little friends found' })).toBeVisible();
   expect(external).toEqual([]);
 });
+test('a poster keeps a maximum-width toy name inside its tile', async ({ page }) => {
+  await start(page, false);
+  await page.getByRole('button', { name: 'Add my first friend' }).click();
+  await page.getByLabel('Toy name').fill('W'.repeat(40));
+  await page.getByRole('button', { name: 'Add to my shelf' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+
+  const share = page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('button', { name: 'Share', exact: true });
+  if (await share.isVisible()) await share.click();
+  else await page.getByRole('button', { name: 'Share my collection', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  const question = await dialog.getByText(/Grown-ups: what is/).textContent();
+  const numbers = question!.match(/(\d+) × (\d+)/)!;
+  await dialog.getByRole('textbox').fill(String(Number(numbers[1]) * Number(numbers[2])));
+  await dialog.getByRole('button', { name: 'Make collection picture' }).click();
+
+  const bounds = await dialog.getByRole('img', { name: /Collection picture/ }).evaluate(async (image: HTMLImageElement) => {
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(image, 0, 0);
+    const pixels = ctx.getImageData(0, 434, canvas.width, 56).data;
+    let left = canvas.width, right = -1;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (pixels[i] !== 0x35 || pixels[i + 1] !== 0x25 || pixels[i + 2] !== 0x4f) continue;
+      const x = (i / 4) % canvas.width;
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+    }
+    return { left, right };
+  });
+  expect(bounds.right).toBeGreaterThan(bounds.left);
+  expect(bounds.left).toBeGreaterThanOrEqual(48);
+  expect(bounds.right).toBeLessThan(364);
+});
 test('a stale second tab cannot erase a newly added friend', async ({ page, context }) => {
   await start(page, false);
   const other = await context.newPage();
