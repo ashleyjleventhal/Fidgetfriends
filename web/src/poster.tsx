@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Critter } from './Critter';
-import { colors, publicItems } from './model';
+import { colors, publicItems, shortName } from './model';
 import type { Item } from './model';
 export const perPage = 12;
 export async function makePoster(items: Item[], page: number): Promise<Blob> {
@@ -14,7 +14,7 @@ export async function makePoster(items: Item[], page: number): Promise<Blob> {
     {safe.map((item, i) => <g key={i} transform={`translate(${48 + (i % 3) * 334}, ${220 + Math.floor(i / 3) * 290})`}>
       <rect width="316" height="270" rx="26" fill={colors[item.color][2]}/>
       <svg x="47" y="4" width="222" height="210" viewBox="0 0 200 190"><Critter species={item.species} color={item.color}/></svg>
-      <text x="158" y="238" textAnchor="middle" fontFamily="sans-serif" fontWeight="bold" fill="#35254f" fontSize="24">{Array.from(item.name).slice(0, 20).join('')}{Array.from(item.name).length > 20 ? '…' : ''}</text>
+      <text x="158" y="238" textAnchor="middle" fontFamily="sans-serif" fontWeight="bold" fill="#35254f" fontSize="24">{shortName(item.name, 20)}</text>
     </g>)}
     <text x="540" y={height - 32} textAnchor="middle" fill="#71627f" fontFamily="sans-serif" fontSize="18">Made with Fidget Friends · {items.length} little joys{items.length > perPage ? ` · Page ${page + 1} of ${Math.ceil(items.length / perPage)}` : ''}</text>
   </svg>);

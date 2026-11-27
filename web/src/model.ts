@@ -12,6 +12,10 @@ export type Collection = { version: 1; profile: Profile | null; items: Item[] };
 export type Filter = 'all' | 'squishy' | 'fidget' | 'favorite';
 export const defaultLook: Look = { species: 'blob', color: 'grape', eyes: 'sparkle', accessory: 'crown', cheeks: true };
 export const emptyCollection: Collection = { version: 1, profile: null, items: [] };
+const graphemes = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter() : null;
+export function graphemeList(text: string): string[] { return graphemes ? Array.from(graphemes.segment(text), s => s.segment) : Array.from(text); }
+export function limitText(text: string, max: number): string { const parts = graphemeList(text); return parts.length > max ? parts.slice(0, max).join('') : text; }
+export function shortName(text: string, max: number): string { const parts = graphemeList(text); return parts.length > max ? parts.slice(0, max).join('') + '…' : text; }
 export function newItem(): Item { return { id: crypto.randomUUID(), name: '', kind: 'squishy', species: 'blob', color: 'bubblegum', tags: [], notes: '', favorite: false, createdAt: Date.now() }; }
 export function filteredItems(items: Item[], filter: Filter, query: string): Item[] {
   const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
