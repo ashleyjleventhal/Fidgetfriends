@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Renders a toy-only collection picture on-device, asks a grown-up to pass a gate,
 /// then hands the picture to the iOS share sheet. Nothing is sent automatically.
@@ -6,20 +7,22 @@ struct ShareFlowView: View {
     @EnvironmentObject private var store: AppStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.scenePhase) private var scenePhase
     let items: [CollectionItem]
 
-    private enum Stage { case preview, gate, ready }
-    @State private var stage: Stage = .preview
+    @State private var showingGate = false
+    @State private var showingShareSheet = false
     @State private var poster: UIImage?
 
     var body: some View {
         NavigationStack {
             Group {
-                switch stage {
-                case .preview, .ready:
+                if showingGate {
+                    ParentGateView(onPass: openShareSheet) {
+                        withAnimation { showingGate = false }
+                    }
+                } else {
                     previewStage
-                case .gate:
-                    ParentGateView { withAnimation { stage = .ready } } onCancel: { withAnimation { stage = .preview } }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -35,6 +38,17 @@ struct ShareFlowView: View {
             }
         }
         .task { render() }
+        .sheet(isPresented: $showingShareSheet) {
+            if let poster {
+                CollectionActivityView(poster: poster)
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background {
+                showingGate = false
+                showingShareSheet = false
+            }
+        }
     }
 
     private var previewStage: some View {
@@ -50,7 +64,7 @@ struct ShareFlowView: View {
                             .accessibilityIdentifier("share.truncated")
                     }
 
-                    Label("Only toy pictures and names go in. Your nickname and private notes stay out.", systemImage: "lock.shield.fill")
+                    Label("Check your toy pictures and names for personal info before sharing. Your profile nickname and private notes aren’t added.", systemImage: "lock.shield.fill")
                         .font(.fun(.subheadline, weight: .semibold))
                         .foregroundStyle(Palette.grape)
                         .multilineTextAlignment(.leading)
@@ -88,28 +102,19 @@ struct ShareFlowView: View {
         .frame(maxHeight: maxHeight)
     }
 
-    @ViewBuilder
     private var shareActions: some View {
-        if stage == .ready, let poster {
-            VStack(spacing: 10) {
-                ShareLink(item: Image(uiImage: poster), preview: SharePreview("My squishy squad", image: Image(uiImage: poster))) {
-                    Label("Choose how to send", systemImage: "square.and.arrow.up")
-                }
-                .buttonStyle(.chunky(Palette.grape, shadow: Palette.grapeDeep))
-                .accessibilityIdentifier("share.open")
-                Text("Pick Messages to send it to a friend. Nothing is sent until you tap Send.")
-                    .font(.fun(.footnote, weight: .semibold))
-                    .foregroundStyle(Palette.inkSoft)
-                    .multilineTextAlignment(.center)
-            }
-        } else {
-            Button { withAnimation { stage = .gate } } label: {
-                Label("Ask a grown-up to send it", systemImage: "person.2.fill")
-            }
-            .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep))
-            .disabled(poster == nil)
-            .accessibilityIdentifier("share.continue")
+        Button { withAnimation { showingGate = true } } label: {
+            Label("Ask a grown-up to send it", systemImage: "person.2.fill")
         }
+        .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep))
+        .disabled(poster == nil)
+        .accessibilityIdentifier("share.continue")
+    }
+
+    private func openShareSheet() {
+        showingGate = false
+        guard scenePhase == .active, poster != nil else { return }
+        showingShareSheet = true
     }
 
     private var featured: [CollectionItem] { SharePoster.featured(from: items) }
@@ -122,6 +127,16 @@ struct ShareFlowView: View {
         renderer.scale = max(displayScale, 2)
         poster = renderer.uiImage
     }
+}
+
+private struct CollectionActivityView: UIViewControllerRepresentable {
+    let poster: UIImage
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [poster], applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
 struct SharePoster: View {
@@ -237,7 +252,7 @@ struct ParentGateView: View {
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
             ZStack {
-                Text("To send this picture, a grown-up please answer:")
+                Text("A grown-up must answer before the share sheet opens.")
                     .foregroundStyle(Palette.inkSoft)
                     .opacity(wrong ? 0 : 1)
                     .accessibilityHidden(wrong)
