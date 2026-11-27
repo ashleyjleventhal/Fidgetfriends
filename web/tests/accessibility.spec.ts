@@ -77,6 +77,7 @@ test('buddy editor fits without sideways scrolling at very large text', async ({
   await page.getByRole('button', { name: /Edit my buddy/ }).filter({ visible: true }).first().click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('button', { name: 'Kitty' })).toBeVisible();
+  expect(await dialog.getByRole('button', { name: 'Kitty' }).locator('span').last().evaluate(e => parseFloat(getComputedStyle(e).fontSize))).toBeGreaterThan(30);
   expect(await dialog.evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
 });
 
