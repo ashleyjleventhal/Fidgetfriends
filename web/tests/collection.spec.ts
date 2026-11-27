@@ -58,6 +58,119 @@ test('grown-up gate rejects a wrong answer and prepares a private PNG', async ({
   else await page.getByRole('button', { name: 'Share my collection', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'A little help from a grown-up' })).toBeVisible();
 });
+async function openShare(page: import('@playwright/test').Page) {
+  const share = page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('button', { name: 'Share', exact: true });
+  if (await share.isVisible()) await share.click();
+  else await page.getByRole('button', { name: 'Share my collection', exact: true }).click();
+  return page.getByRole('dialog');
+}
+async function makePicture(page: import('@playwright/test').Page) {
+  const dialog = page.getByRole('dialog');
+  const question = await dialog.getByText(/Grown-ups: what is/).textContent();
+  const [, a, b] = question!.match(/(\d+) × (\d+)/)!;
+  await dialog.getByRole('textbox').fill(String(Number(a) * Number(b)));
+  await dialog.getByRole('button', { name: 'Make collection picture' }).click();
+  await expect(dialog.getByRole('img', { name: /Collection picture/ })).toBeVisible();
+}
+for (const scenario of ['missing share', 'missing canShare', 'files unsupported'] as const) {
+  test(`offers only Save picture when ${scenario}`, async ({ page }) => {
+    await page.addInitScript(scenario => {
+      Object.defineProperties(navigator, {
+        share: { value: scenario === 'missing share' ? undefined : async () => {} },
+        canShare: { value: scenario === 'missing canShare' ? undefined : () => scenario !== 'files unsupported' },
+      });
+    }, scenario);
+    await start(page);
+    const dialog = await openShare(page);
+    await makePicture(page);
+    await expect(dialog.getByRole('button', { name: 'Share picture' })).toHaveCount(0);
+    const save = dialog.getByRole('link', { name: 'Save picture' });
+    await expect(save).toHaveClass(/\bprimary\b/);
+    const download = page.waitForEvent('download');
+    await save.click();
+    expect((await download).suggestedFilename()).toBe('fidget-friends-1.png');
+  });
+}
+test('clears a share error when a grown-up retries successfully', async ({ page }) => {
+  await page.addInitScript(() => {
+    let calls = 0;
+    Object.defineProperties(navigator, {
+      canShare: { value: () => true },
+      share: { value: async () => {
+        if (++calls === 1) throw new DOMException('Denied for this test', 'NotAllowedError');
+        return new Promise<void>(resolve => document.addEventListener('finish-share', () => {
+          document.body.dataset.shareFinished = 'yes';
+          resolve();
+        }, { once: true }));
+      } },
+    });
+  });
+  await start(page);
+  const dialog = await openShare(page);
+  await makePicture(page);
+  const share = dialog.getByRole('button', { name: 'Share picture' });
+  await share.click();
+  await expect(dialog.getByRole('alert')).toContainText('Sharing is unavailable here');
+  await expect(dialog.getByRole('link', { name: 'Save picture' })).toBeVisible();
+  await share.click();
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await page.evaluate(() => document.dispatchEvent(new Event('finish-share')));
+  await expect(page.locator('body')).toHaveAttribute('data-share-finished', 'yes');
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+});
+test('does not count blank grown-up answers or change the question', async ({ page }) => {
+  await start(page);
+  const dialog = await openShare(page);
+  const question = dialog.getByText(/Grown-ups: what is/);
+  const input = dialog.getByRole('textbox');
+  const submit = dialog.getByRole('button', { name: 'Make collection picture' });
+  const initial = await question.textContent();
+  for (const blank of ['', ' ', '']) {
+    await input.fill(blank);
+    await submit.click();
+    await expect(question).toHaveText(initial!);
+    await expect(dialog.getByRole('alert')).toHaveCount(0);
+    await expect(submit).toBeEnabled();
+  }
+  for (let miss = 0; miss < 2; miss++) {
+    await input.fill('0');
+    await submit.click();
+    await expect(submit).toBeEnabled();
+  }
+  await makePicture(page);
+});
+test('locks the grown-up gate for 30 seconds after three wrong answers', async ({ page }) => {
+  const now = new Date('2026-01-01T12:00:00Z');
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(new Date(now.getTime() + 1_000));
+  await start(page);
+  const dialog = await openShare(page);
+  const question = dialog.getByText(/Grown-ups: what is/);
+  const input = dialog.getByRole('textbox');
+  const submit = dialog.getByRole('button', { name: 'Make collection picture' });
+  for (let miss = 1; miss <= 3; miss++) {
+    const previous = await question.textContent();
+    await expect(submit).toBeEnabled();
+    await input.fill('0');
+    await submit.click();
+    await expect(question).not.toHaveText(previous!);
+  }
+  await expect(dialog.getByRole('status')).toContainText('Grown-ups, please wait 30 seconds');
+  await expect(input).toBeDisabled();
+  await expect(submit).toBeDisabled();
+  await expect(dialog.getByRole('img', { name: /Collection picture/ })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await openShare(page);
+  await page.clock.fastForward(29_999);
+  await expect(submit).toBeDisabled();
+  await page.clock.fastForward(1);
+  await expect(submit).toBeEnabled();
+  await expect(dialog.getByRole('status')).toHaveCount(0);
+  await input.fill('0');
+  await submit.click();
+  await expect(submit).toBeEnabled();
+  await makePicture(page);
+});
 test('has no horizontal overflow and loads no third-party resources', async ({ page }) => {
   const external: string[] = [];
   page.on('request', request => { if (/^https?:/.test(request.url()) && new URL(request.url()).hostname !== '127.0.0.1') external.push(request.url()); });
