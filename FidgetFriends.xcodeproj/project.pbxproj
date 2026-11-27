@@ -1,0 +1,617 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0C1CD2C161FA139F55AE0A59 /* FidgetFriendsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49516AA125D0812CDAB9FE50 /* FidgetFriendsUITests.swift */; };
+		0D864D8AB83EFCB5FAEC253E /* ItemEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C925B5BCE0DDF74257A4AA /* ItemEditorView.swift */; };
+		13A7CF1F1722E3C7683DAC86 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B9871A770FB5EC77B914352 /* AppStore.swift */; };
+		322FABF4889F0E54BDBAEC0F /* Decorations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8983FAA109BF669777346E43 /* Decorations.swift */; };
+		478E5132B2744D11E55F093D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 524A56929A427812C35D5D4A /* Assets.xcassets */; };
+		5049034139EB54BF05D507ED /* ItemDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFB59C32EBE67BE993FD8AC /* ItemDetailScreen.swift */; };
+		5E72A986E0901097DCA2809E /* FidgetFriendsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA84A42DE97A0C50505A8230 /* FidgetFriendsTests.swift */; };
+		653E9AB97C8137F1C514052E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7106BAA7039CC6D21DCF3E80 /* Models.swift */; };
+		6A15439CC1250C58E4332F25 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D4B40D2197B6B540B05B841 /* Theme.swift */; };
+		8152FD44E727D2A4FDD2BEF2 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABEC0BEC4A458B16B1C2342 /* OnboardingView.swift */; };
+		971A18135AC57B68A7C99FED /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6BFE4D41E30DAE3CE36D7C /* Components.swift */; };
+		C6B88C55977C8C0C8D5CC447 /* CharacterScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8175D0252E153947C1E8EC60 /* CharacterScreen.swift */; };
+		CF4EFB0E2F84E12505B5C6E3 /* CritterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A259CA953CADE0EAE7CB29E /* CritterView.swift */; };
+		D2F5C4C058597E5572664C0A /* ShelfScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88EABBA891B20382F0739211 /* ShelfScreen.swift */; };
+		DE9DAC69BBAA3CB4BC5E3AF3 /* CharacterBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1AEF54948767BD2BC9B597 /* CharacterBuilder.swift */; };
+		E6A24CDBD54BF0F8D1AC149A /* ShareFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32185475A4EAF25E85B4A5E4 /* ShareFlowView.swift */; };
+		F46D2523F366D8E1BBCAE8CA /* FidgetFriendsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156CABCD8C479C9E6F1180B5 /* FidgetFriendsApp.swift */; };
+		F54798394F3DA5B2C2CEE4F1 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF58444E8DAD15DA46528EE /* RootView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7ED7AD68DC435A2159B1D74E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 656D6ABDD48A53FBE9E1D65F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D3B2D5976F97DCC151EBA668;
+			remoteInfo = FidgetFriends;
+		};
+		BF9E3191F0A11CECA623B6D1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 656D6ABDD48A53FBE9E1D65F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D3B2D5976F97DCC151EBA668;
+			remoteInfo = FidgetFriends;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		13B02099AB60E1B41782DFD1 /* FidgetFriends.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FidgetFriends.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		156CABCD8C479C9E6F1180B5 /* FidgetFriendsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FidgetFriendsApp.swift; sourceTree = "<group>"; };
+		1A259CA953CADE0EAE7CB29E /* CritterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CritterView.swift; sourceTree = "<group>"; };
+		1B9871A770FB5EC77B914352 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		32185475A4EAF25E85B4A5E4 /* ShareFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareFlowView.swift; sourceTree = "<group>"; };
+		49516AA125D0812CDAB9FE50 /* FidgetFriendsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FidgetFriendsUITests.swift; sourceTree = "<group>"; };
+		524A56929A427812C35D5D4A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7106BAA7039CC6D21DCF3E80 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		8175D0252E153947C1E8EC60 /* CharacterScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterScreen.swift; sourceTree = "<group>"; };
+		8643B61F5085FC1F52BF9A3C /* FidgetFriendsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FidgetFriendsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		88EABBA891B20382F0739211 /* ShelfScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShelfScreen.swift; sourceTree = "<group>"; };
+		8983FAA109BF669777346E43 /* Decorations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Decorations.swift; sourceTree = "<group>"; };
+		8D4B40D2197B6B540B05B841 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		AEFB59C32EBE67BE993FD8AC /* ItemDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailScreen.swift; sourceTree = "<group>"; };
+		B130B69491DA23D28E6A0202 /* FidgetFriendsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FidgetFriendsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CBF58444E8DAD15DA46528EE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		CC6BFE4D41E30DAE3CE36D7C /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		F4C925B5BCE0DDF74257A4AA /* ItemEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemEditorView.swift; sourceTree = "<group>"; };
+		FA84A42DE97A0C50505A8230 /* FidgetFriendsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FidgetFriendsTests.swift; sourceTree = "<group>"; };
+		FABEC0BEC4A458B16B1C2342 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		FE1AEF54948767BD2BC9B597 /* CharacterBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterBuilder.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0DEAE30AC75A8D2FC03543F7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13B02099AB60E1B41782DFD1 /* FidgetFriends.app */,
+				8643B61F5085FC1F52BF9A3C /* FidgetFriendsTests.xctest */,
+				B130B69491DA23D28E6A0202 /* FidgetFriendsUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		10570316B0E0C4B1DAFE72AE /* FidgetFriendsTests */ = {
+			isa = PBXGroup;
+			children = (
+				FA84A42DE97A0C50505A8230 /* FidgetFriendsTests.swift */,
+			);
+			path = FidgetFriendsTests;
+			sourceTree = "<group>";
+		};
+		2F0E78348ED1C272D5BC431B /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				1B9871A770FB5EC77B914352 /* AppStore.swift */,
+				7106BAA7039CC6D21DCF3E80 /* Models.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		46702104648AE881D1CECD7D /* App */ = {
+			isa = PBXGroup;
+			children = (
+				156CABCD8C479C9E6F1180B5 /* FidgetFriendsApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		6D9B8FEABCFB23A88CCAA8E9 /* FidgetFriends */ = {
+			isa = PBXGroup;
+			children = (
+				524A56929A427812C35D5D4A /* Assets.xcassets */,
+				46702104648AE881D1CECD7D /* App */,
+				76B40D66C33BD4DD892F26C5 /* Design */,
+				2F0E78348ED1C272D5BC431B /* Model */,
+				A0BAC8B1557ABF1463CE1B54 /* Views */,
+			);
+			path = FidgetFriends;
+			sourceTree = "<group>";
+		};
+		76B40D66C33BD4DD892F26C5 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				CC6BFE4D41E30DAE3CE36D7C /* Components.swift */,
+				1A259CA953CADE0EAE7CB29E /* CritterView.swift */,
+				8983FAA109BF669777346E43 /* Decorations.swift */,
+				8D4B40D2197B6B540B05B841 /* Theme.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		A0BAC8B1557ABF1463CE1B54 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FE1AEF54948767BD2BC9B597 /* CharacterBuilder.swift */,
+				8175D0252E153947C1E8EC60 /* CharacterScreen.swift */,
+				AEFB59C32EBE67BE993FD8AC /* ItemDetailScreen.swift */,
+				F4C925B5BCE0DDF74257A4AA /* ItemEditorView.swift */,
+				FABEC0BEC4A458B16B1C2342 /* OnboardingView.swift */,
+				CBF58444E8DAD15DA46528EE /* RootView.swift */,
+				32185475A4EAF25E85B4A5E4 /* ShareFlowView.swift */,
+				88EABBA891B20382F0739211 /* ShelfScreen.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		B6C45FC7ADADE9FA4E9D80B7 = {
+			isa = PBXGroup;
+			children = (
+				6D9B8FEABCFB23A88CCAA8E9 /* FidgetFriends */,
+				10570316B0E0C4B1DAFE72AE /* FidgetFriendsTests */,
+				FAF87E929651DB8A32557BFB /* FidgetFriendsUITests */,
+				0DEAE30AC75A8D2FC03543F7 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FAF87E929651DB8A32557BFB /* FidgetFriendsUITests */ = {
+			isa = PBXGroup;
+			children = (
+				49516AA125D0812CDAB9FE50 /* FidgetFriendsUITests.swift */,
+			);
+			path = FidgetFriendsUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7AAC3DEC25932E97597A1EC3 /* FidgetFriendsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AD1254127B87C25681DF9F66 /* Build configuration list for PBXNativeTarget "FidgetFriendsTests" */;
+			buildPhases = (
+				57A5E9FB01D19F79902410AB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BB7B5C62135494761C60B250 /* PBXTargetDependency */,
+			);
+			name = FidgetFriendsTests;
+			packageProductDependencies = (
+			);
+			productName = FidgetFriendsTests;
+			productReference = 8643B61F5085FC1F52BF9A3C /* FidgetFriendsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D3B2D5976F97DCC151EBA668 /* FidgetFriends */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6FCC2C34C68A6AAA8C07EE0B /* Build configuration list for PBXNativeTarget "FidgetFriends" */;
+			buildPhases = (
+				FE37718C8252DB5B50840EF1 /* Sources */,
+				B2E9CE6ADD9B4602E066EA6B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FidgetFriends;
+			packageProductDependencies = (
+			);
+			productName = FidgetFriends;
+			productReference = 13B02099AB60E1B41782DFD1 /* FidgetFriends.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FD943D212F6874DDACB16C79 /* FidgetFriendsUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D65EA9C8DA69A90829A739AC /* Build configuration list for PBXNativeTarget "FidgetFriendsUITests" */;
+			buildPhases = (
+				B8F74ED1ABDC23B43C4E5828 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				89BE25E80BED124CE5D959A8 /* PBXTargetDependency */,
+			);
+			name = FidgetFriendsUITests;
+			packageProductDependencies = (
+			);
+			productName = FidgetFriendsUITests;
+			productReference = B130B69491DA23D28E6A0202 /* FidgetFriendsUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		656D6ABDD48A53FBE9E1D65F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					7AAC3DEC25932E97597A1EC3 = {
+						ProvisioningStyle = Automatic;
+					};
+					D3B2D5976F97DCC151EBA668 = {
+						ProvisioningStyle = Automatic;
+					};
+					FD943D212F6874DDACB16C79 = {
+						ProvisioningStyle = Automatic;
+						TestTargetID = D3B2D5976F97DCC151EBA668;
+					};
+				};
+			};
+			buildConfigurationList = 566C1AA183490160C20B424A /* Build configuration list for PBXProject "FidgetFriends" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = B6C45FC7ADADE9FA4E9D80B7;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0DEAE30AC75A8D2FC03543F7 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D3B2D5976F97DCC151EBA668 /* FidgetFriends */,
+				7AAC3DEC25932E97597A1EC3 /* FidgetFriendsTests */,
+				FD943D212F6874DDACB16C79 /* FidgetFriendsUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B2E9CE6ADD9B4602E066EA6B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				478E5132B2744D11E55F093D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		57A5E9FB01D19F79902410AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5E72A986E0901097DCA2809E /* FidgetFriendsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B8F74ED1ABDC23B43C4E5828 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C1CD2C161FA139F55AE0A59 /* FidgetFriendsUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE37718C8252DB5B50840EF1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				13A7CF1F1722E3C7683DAC86 /* AppStore.swift in Sources */,
+				DE9DAC69BBAA3CB4BC5E3AF3 /* CharacterBuilder.swift in Sources */,
+				C6B88C55977C8C0C8D5CC447 /* CharacterScreen.swift in Sources */,
+				971A18135AC57B68A7C99FED /* Components.swift in Sources */,
+				CF4EFB0E2F84E12505B5C6E3 /* CritterView.swift in Sources */,
+				322FABF4889F0E54BDBAEC0F /* Decorations.swift in Sources */,
+				F46D2523F366D8E1BBCAE8CA /* FidgetFriendsApp.swift in Sources */,
+				5049034139EB54BF05D507ED /* ItemDetailScreen.swift in Sources */,
+				0D864D8AB83EFCB5FAEC253E /* ItemEditorView.swift in Sources */,
+				653E9AB97C8137F1C514052E /* Models.swift in Sources */,
+				8152FD44E727D2A4FDD2BEF2 /* OnboardingView.swift in Sources */,
+				F54798394F3DA5B2C2CEE4F1 /* RootView.swift in Sources */,
+				E6A24CDBD54BF0F8D1AC149A /* ShareFlowView.swift in Sources */,
+				D2F5C4C058597E5572664C0A /* ShelfScreen.swift in Sources */,
+				6A15439CC1250C58E4332F25 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		89BE25E80BED124CE5D959A8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D3B2D5976F97DCC151EBA668 /* FidgetFriends */;
+			targetProxy = BF9E3191F0A11CECA623B6D1 /* PBXContainerItemProxy */;
+		};
+		BB7B5C62135494761C60B250 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D3B2D5976F97DCC151EBA668 /* FidgetFriends */;
+			targetProxy = 7ED7AD68DC435A2159B1D74E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1104AD3BA77F0A9E0C007A25 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashleyjleventhal.fidgetfriends.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FidgetFriends;
+			};
+			name = Debug;
+		};
+		315DE2546D91A8F6994CC4F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashleyjleventhal.fidgetfriends.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FidgetFriends;
+			};
+			name = Release;
+		};
+		3B1027215F2E1628C28C91D9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		65563CB49968F5DC5A75D3B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Fidget Friends";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.kids-games";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Fidget Friends saves your collection picture to Photos only when a grown-up chooses Save Image.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashleyjleventhal.fidgetfriends;
+				PRODUCT_NAME = FidgetFriends;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8E701EADAC184E7B27E52D2E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashleyjleventhal.fidgetfriends.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FidgetFriends.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FidgetFriends";
+			};
+			name = Debug;
+		};
+		B3537910211F3C2C3B34B0B4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E48C9ED5D336B0439521585A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashleyjleventhal.fidgetfriends.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FidgetFriends.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FidgetFriends";
+			};
+			name = Release;
+		};
+		E9362D8330D59286D105278E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Fidget Friends";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.kids-games";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Fidget Friends saves your collection picture to Photos only when a grown-up chooses Save Image.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ashleyjleventhal.fidgetfriends;
+				PRODUCT_NAME = FidgetFriends;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		566C1AA183490160C20B424A /* Build configuration list for PBXProject "FidgetFriends" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B3537910211F3C2C3B34B0B4 /* Debug */,
+				3B1027215F2E1628C28C91D9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6FCC2C34C68A6AAA8C07EE0B /* Build configuration list for PBXNativeTarget "FidgetFriends" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				65563CB49968F5DC5A75D3B6 /* Debug */,
+				E9362D8330D59286D105278E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AD1254127B87C25681DF9F66 /* Build configuration list for PBXNativeTarget "FidgetFriendsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8E701EADAC184E7B27E52D2E /* Debug */,
+				E48C9ED5D336B0439521585A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D65EA9C8DA69A90829A739AC /* Build configuration list for PBXNativeTarget "FidgetFriendsUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1104AD3BA77F0A9E0C007A25 /* Debug */,
+				315DE2546D91A8F6994CC4F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 656D6ABDD48A53FBE9E1D65F /* Project object */;
+}
