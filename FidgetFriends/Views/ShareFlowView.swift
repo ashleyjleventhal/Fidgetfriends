@@ -46,7 +46,7 @@ struct ShareFlowView: View {
                     .scaledToFit()
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .shadow(color: Palette.grape.opacity(0.25), radius: 16, y: 8)
-                    .accessibilityLabel("Collection picture with \(featured.count) toys")
+                    .accessibilityLabel("Collection picture with \(counted(featured.count, singular: "toy", plural: "toys"))")
                     .accessibilityIdentifier("share.poster")
             } else {
                 ProgressView().frame(height: 300)
@@ -127,7 +127,7 @@ struct SharePoster: View {
                         Text("My squishy squad!")
                             .font(.system(size: 42, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
-                        Text("\(totalCount) tiny besties on my happy shelf")
+                        Text("\(counted(totalCount, singular: "tiny bestie", plural: "tiny besties")) on my happy shelf")
                             .font(.system(size: 20, weight: .bold, design: .rounded))
                             .foregroundStyle(Palette.sunshine)
                         if let note = Self.truncationNote(shown: items.count, total: totalCount) {

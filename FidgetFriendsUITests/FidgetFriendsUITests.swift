@@ -101,6 +101,7 @@ final class FidgetFriendsUITests: XCTestCase {
         XCTAssertEqual(add.label, "Add my first toy")
         XCTAssertFalse(element("shelf.share").exists)
         XCTAssertFalse(element("item.card.Peachy").exists)
+        XCTAssertTrue(element("shelf.counts").label.contains("0 squishies & 0 fidgets"))
         screenshot("first-run-empty-shelf")
         add.tap()
 
@@ -115,10 +116,17 @@ final class FidgetFriendsUITests: XCTestCase {
 
         let bunny = element("item.card.Bunny")
         XCTAssertTrue(bunny.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["1 tiny bestie. One happy collection."].exists)
+        XCTAssertTrue(element("shelf.counts").label.contains("1 squishy & 0 fidgets"))
         screenshot("first-run-bunny-on-shelf")
         app.terminate()
         launch([])
         XCTAssertTrue(bunny.waitForExistence(timeout: 5))
+        tap("shelf.share")
+        let poster = element("share.poster")
+        XCTAssertTrue(poster.waitForExistence(timeout: 5))
+        XCTAssertEqual(poster.label, "Collection picture with 1 toy")
+        tap("share.close")
 
         open("character", title: "My character")
         XCTAssertTrue(app.staticTexts["Hi friend! Change your buddy any time."].waitForExistence(timeout: 3))
@@ -168,6 +176,8 @@ final class FidgetFriendsUITests: XCTestCase {
 
     func testFavoriteAndFilterNavigation() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
+        XCTAssertTrue(element("shelf.counts").waitForExistence(timeout: 3))
+        XCTAssertTrue(element("shelf.counts").label.contains("5 squishies & 2 fidgets"))
         tap("filter.fidgets")
         XCTAssertTrue(element("item.card.Rainbow Pop").waitForExistence(timeout: 3))
         XCTAssertFalse(element("item.card.Peachy").exists)

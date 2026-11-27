@@ -15,6 +15,14 @@ struct ShelfScreen: View {
     private var activeFilter: CollectionFilter { favoritesOnly ? .faves : filter }
     private var visible: [CollectionItem] { store.items.filtered(activeFilter, search: search) }
     private var needsFirstToy: Bool { !favoritesOnly && store.items.isEmpty }
+    private var toyCountLabel: String {
+        if favoritesOnly {
+            return "\(counted(store.favoriteCount, singular: "fave", plural: "faves"))!"
+        }
+        let squishies = counted(store.squishyCount, singular: "squishy", plural: "squishies")
+        let fidgets = counted(store.fidgetCount, singular: "fidget", plural: "fidgets")
+        return "\(squishies) & \(fidgets)"
+    }
 
     var body: some View {
         ScrollView {
@@ -55,7 +63,7 @@ struct ShelfScreen: View {
                 .font(.system(.largeTitle, design: .rounded).weight(.black))
                 .foregroundStyle(Palette.ink)
                 .accessibilityIdentifier("shelf.title")
-            Text(favoritesOnly ? "The ones you love the most" : "\(store.items.count) tiny besties. One happy collection.")
+            Text(favoritesOnly ? "The ones you love the most" : "\(counted(store.items.count, singular: "tiny bestie", plural: "tiny besties")). One happy collection.")
                 .font(.fun(.headline, weight: .semibold))
                 .foregroundStyle(Palette.inkSoft)
         }
@@ -64,7 +72,7 @@ struct ShelfScreen: View {
     private var banner: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(favoritesOnly ? "\(store.favoriteCount) faves!" : "\(store.squishyCount) squishys & \(store.fidgetCount) fidgets")
+                Text(toyCountLabel)
                     .font(.fun(.title2, weight: .heavy))
                     .foregroundStyle(Palette.ink)
                 Text("Good things come in squishy shapes.")
@@ -83,6 +91,7 @@ struct ShelfScreen: View {
         )
         .overlay(SparkleSprinkles(color: Palette.coral))
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("shelf.counts")
     }
 
     private var filterChips: some View {

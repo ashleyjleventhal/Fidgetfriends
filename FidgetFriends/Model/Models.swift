@@ -235,7 +235,7 @@ enum CollectionFilter: String, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .all: return "All"
-        case .squishys: return "Squishys"
+        case .squishys: return "Squishies"
         case .fidgets: return "Fidgets"
         case .faves: return "Faves"
         }
