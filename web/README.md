@@ -36,7 +36,7 @@ UI coverage uses a fresh browser context for every test, with iPhone and iPad vi
 
 ## Install on iPhone or iPad
 
-Open the public HTTPS link in Safari, tap **Share → Add to Home Screen → Add**. Launch from the icon before building your real collection. Manifest, standalone metadata, and local PNG icons are included. This first version requires a network connection to load; no offline cache/service worker is installed.
+Open the public HTTPS link in Safari, tap **Share → Add to Home Screen → Add**. Launch from the icon while online before building your real collection. Once the app has loaded and prepared its offline cache, you can reopen it offline and keep using your collection. The service worker caches the production app files only; your collection stays in IndexedDB.
 
 ## Hosting
 
