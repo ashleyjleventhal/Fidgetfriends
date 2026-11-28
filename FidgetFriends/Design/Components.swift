@@ -177,27 +177,32 @@ struct FlowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrange(width: bounds.width, subviews: subviews)
-        for (index, origin) in result.origins.enumerated() {
-            subviews[index].place(at: CGPoint(x: bounds.minX + origin.x, y: bounds.minY + origin.y), proposal: .unspecified)
+        let result = arrange(width: proposal.width ?? .infinity, subviews: subviews)
+        for (index, placement) in result.placements.enumerated() {
+            subviews[index].place(at: CGPoint(x: bounds.minX + placement.origin.x, y: bounds.minY + placement.origin.y),
+                                  proposal: placement.proposal)
         }
     }
 
-    private func arrange(width: CGFloat, subviews: Subviews) -> (size: CGSize, origins: [CGPoint]) {
-        var origins: [CGPoint] = []
-        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, maxX: CGFloat = 0
+    private func arrange(width: CGFloat, subviews: Subviews)
+        -> (size: CGSize, placements: [(origin: CGPoint, proposal: ProposedViewSize)]) {
+        var placements: [(origin: CGPoint, proposal: ProposedViewSize)] = []
+        var rowWidth: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, maxX: CGFloat = 0
         for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
+            let idealSize = subview.sizeThatFits(.unspecified)
+            let childProposal = idealSize.width > width ? ProposedViewSize(width: width, height: nil) : .unspecified
+            let size = idealSize.width > width ? subview.sizeThatFits(childProposal) : idealSize
+            var x = rowWidth > 0 ? rowWidth + spacing : 0
             if x > 0, x + size.width > width {
                 x = 0
                 y += rowHeight + spacing
                 rowHeight = 0
             }
-            origins.append(CGPoint(x: x, y: y))
-            x += size.width + spacing
-            maxX = max(maxX, x - spacing)
+            placements.append((CGPoint(x: x, y: y), childProposal))
+            rowWidth = x + size.width
+            maxX = max(maxX, rowWidth)
             rowHeight = max(rowHeight, size.height)
         }
-        return (CGSize(width: maxX, height: y + rowHeight), origins)
+        return (CGSize(width: maxX, height: y + rowHeight), placements)
     }
 }
