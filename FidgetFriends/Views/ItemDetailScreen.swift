@@ -21,10 +21,12 @@ struct ItemDetailScreen: View {
 
 struct ItemDetailContent: View {
     @EnvironmentObject private var store: AppStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let item: CollectionItem
     var onDelete: () -> Void
     @State private var editing = false
     @State private var confirmingDelete = false
+    @State private var saveFailed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -34,7 +36,8 @@ struct ItemDetailContent: View {
                 .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).strokeBorder(.white, lineWidth: 5))
                 .shadow(color: Palette.grape.opacity(0.15), radius: 14, y: 8)
 
-            HStack(alignment: .top) {
+            let titleLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading)) : AnyLayout(HStackLayout(alignment: .top))
+            titleLayout {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.name)
                         .font(.system(.largeTitle, design: .rounded).weight(.black))
@@ -42,9 +45,11 @@ struct ItemDetailContent: View {
                         .accessibilityIdentifier("detail.name")
                     Text(item.subtitle).font(.fun(.headline, weight: .semibold)).foregroundStyle(Palette.inkSoft)
                 }
-                Spacer()
+                if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { store.toggleFavorite(item.id) }
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                        saveFailed = !store.toggleFavorite(item.id)
+                    }
                 } label: {
                     Image(systemName: item.isFavorite ? "heart.fill" : "heart")
                         .font(.system(size: 28, weight: .bold))
@@ -85,7 +90,8 @@ struct ItemDetailContent: View {
                 .stickerCard(border: Palette.sunshine)
             }
 
-            HStack(spacing: 12) {
+            let actionLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))
+            actionLayout {
                 Button { editing = true } label: { Label("Edit", systemImage: "pencil") }
                     .buttonStyle(.chunky(Palette.mint, shadow: Palette.mintDeep, foreground: Palette.ink))
                     .accessibilityIdentifier("detail.edit")
@@ -97,10 +103,14 @@ struct ItemDetailContent: View {
         .sheet(isPresented: $editing) { ItemEditorView(mode: .edit(item)) }
         .alert("Remove \(item.name) from your shelf?", isPresented: $confirmingDelete) {
             Button("Remove", role: .destructive) {
-                store.delete(item.id)
-                onDelete()
+                if store.delete(item.id) { onDelete() } else { saveFailed = true }
             }
             Button("Keep it", role: .cancel) {}
+        }
+        .alert("Couldn't update your shelf", isPresented: $saveFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Free up some space, then try again.")
         }
     }
 }

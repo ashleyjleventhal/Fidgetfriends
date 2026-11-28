@@ -3,12 +3,17 @@ import UIKit
 
 @MainActor
 final class AppStore: ObservableObject {
-    @Published var profile: Profile? { didSet { persist() } }
-    @Published private(set) var items: [CollectionItem] = [] { didSet { persist() } }
+    @Published private(set) var profile: Profile?
+    @Published private(set) var items: [CollectionItem] = []
+    @Published var setupDraft = SetupDraft() {
+        didSet { defaults.set(try? JSONEncoder().encode(setupDraft), forKey: Self.draftKey) }
+    }
 
     let directory: URL
-    /// False after a failed write, so photos still referenced by the last saved file are kept.
-    private(set) var lastSaveSucceeded = true
+    private let defaults: UserDefaults
+    private var failCollectionWrites = false
+    private var failPhotoWrites = false
+    private static let draftKey = "onboardingDraft"
     private let photoCache: NSCache<NSString, UIImage> = {
         let cache = NSCache<NSString, UIImage>()
         cache.countLimit = 40
@@ -20,12 +25,17 @@ final class AppStore: ObservableObject {
         var items: [CollectionItem]
     }
 
-    init(directory: URL) {
+    init(directory: URL, defaults: UserDefaults = .standard) {
         self.directory = directory
+        self.defaults = defaults
         if let data = try? Data(contentsOf: directory.appendingPathComponent("collection.json")),
            let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data) {
             profile = snapshot.profile
             items = snapshot.items
+        }
+        if profile == nil, let data = defaults.data(forKey: Self.draftKey),
+           let draft = try? JSONDecoder().decode(SetupDraft.self, from: data) {
+            setupDraft = draft
         }
     }
 
@@ -39,14 +49,19 @@ final class AppStore: ObservableObject {
         let directory = defaultDirectory()
         if arguments.contains("-uiTestReset") {
             try? FileManager.default.removeItem(at: directory)
+            UserDefaults.standard.removeObject(forKey: draftKey)
         }
         let store = AppStore(directory: directory)
         if arguments.contains("-uiTestSkipOnboarding"), store.profile == nil {
-            store.profile = .sample
+            _ = store.saveProfile(.sample)
         }
         if arguments.contains("-uiTestSeed"), store.items.isEmpty {
-            store.items = CollectionItem.samples
+            _ = store.persist(profile: store.profile, items: CollectionItem.samples)
         }
+        #if DEBUG
+        store.failCollectionWrites = arguments.contains("-uiTestFailCollectionWrite")
+        store.failPhotoWrites = arguments.contains("-uiTestFailPhotoWrite")
+        #endif
         return store
     }
 
@@ -62,31 +77,50 @@ final class AppStore: ObservableObject {
         return items.first { $0.id == id }
     }
 
-    func add(_ item: CollectionItem) {
-        items.insert(item, at: 0)
+    func saveProfile(_ profile: Profile, addSamples: Bool = false) -> Bool {
+        guard persist(profile: profile, items: addSamples && items.isEmpty ? Array(CollectionItem.samples.reversed()) : items) else {
+            return false
+        }
+        defaults.removeObject(forKey: Self.draftKey)
+        return true
     }
 
-    func update(_ item: CollectionItem) {
-        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+    @discardableResult
+    func add(_ item: CollectionItem) -> Bool {
+        persist(profile: profile, items: [item] + items)
+    }
+
+    @discardableResult
+    func update(_ item: CollectionItem) -> Bool {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return false }
+        var updatedItems = items
         let oldPhoto = items[index].photoFileName
-        items[index] = item
-        if let oldPhoto, oldPhoto != item.photoFileName, lastSaveSucceeded {
+        updatedItems[index] = item
+        guard persist(profile: profile, items: updatedItems) else { return false }
+        if let oldPhoto, oldPhoto != item.photoFileName {
             deletePhoto(named: oldPhoto)
         }
+        return true
     }
 
-    func delete(_ id: UUID) {
-        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
-        let photo = items[index].photoFileName
-        items.remove(at: index)
-        if let photo, lastSaveSucceeded {
+    @discardableResult
+    func delete(_ id: UUID) -> Bool {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return false }
+        var updatedItems = items
+        let photo = updatedItems.remove(at: index).photoFileName
+        guard persist(profile: profile, items: updatedItems) else { return false }
+        if let photo {
             deletePhoto(named: photo)
         }
+        return true
     }
 
-    func toggleFavorite(_ id: UUID) {
-        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
-        items[index].isFavorite.toggle()
+    @discardableResult
+    func toggleFavorite(_ id: UUID) -> Bool {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return false }
+        var updatedItems = items
+        updatedItems[index].isFavorite.toggle()
+        return persist(profile: profile, items: updatedItems)
     }
 
     func savePhoto(_ image: UIImage) -> String? {
@@ -95,6 +129,7 @@ final class AppStore: ObservableObject {
         let name = UUID().uuidString + ".jpg"
         do {
             try FileManager.default.createDirectory(at: photosDirectory, withIntermediateDirectories: true)
+            if failPhotoWrites { throw CocoaError(.fileWriteOutOfSpace) }
             try data.write(to: photosDirectory.appendingPathComponent(name), options: [.atomic, .completeFileProtection])
             photoCache.setObject(resized, forKey: name as NSString)
             return name
@@ -111,22 +146,32 @@ final class AppStore: ObservableObject {
         return image
     }
 
-    private func deletePhoto(named name: String) {
+    func deletePhoto(named name: String) {
         photoCache.removeObject(forKey: name as NSString)
         try? FileManager.default.removeItem(at: photosDirectory.appendingPathComponent(name))
     }
 
-    private func persist() {
+    private func persist(profile: Profile?, items: [CollectionItem]) -> Bool {
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let data = try JSONEncoder().encode(Snapshot(profile: profile, items: items))
+            if failCollectionWrites { throw CocoaError(.fileWriteOutOfSpace) }
             try data.write(to: stateURL, options: [.atomic, .completeFileProtection])
-            lastSaveSucceeded = true
+            if self.profile != profile { self.profile = profile }
+            self.items = items
+            return true
         } catch {
-            lastSaveSucceeded = false
-            assertionFailure("Could not save collection: \(error)")
+            return false
         }
     }
+}
+
+struct SetupDraft: Codable {
+    var step = 0
+    var nickname = ""
+    var buddyName = ""
+    var look = CharacterLook()
+    var addSamples = false
 }
 
 extension UIImage {

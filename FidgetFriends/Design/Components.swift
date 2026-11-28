@@ -67,17 +67,29 @@ struct FunTextField: View {
     let placeholder: String
     @Binding var text: String
     var maxLength = 24
+    var axis: Axis = .horizontal
 
     var body: some View {
-        TextField(placeholder, text: $text)
+        TextField(placeholder, text: $text, prompt: Text(placeholder).foregroundStyle(Palette.inkSoft), axis: axis)
+            .accessibilityLabel(placeholder)
+            .autocorrectionDisabled()
             .font(.fun(.title3))
             .foregroundStyle(Palette.ink)
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
             .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white))
             .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Palette.lilac, lineWidth: 2.5))
-            .onChange(of: text) { _, newValue in
-                if newValue.count > maxLength { text = String(newValue.prefix(maxLength)) }
+            .onChange(of: text) { oldValue, newValue in
+                let name: String
+                if axis == .vertical, newValue.contains(where: \.isNewline) {
+                    name = newValue.filter { !$0.isNewline } == oldValue
+                        ? oldValue
+                        : newValue.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+                } else {
+                    name = newValue
+                }
+                let limited = String(name.prefix(maxLength))
+                if limited != newValue { text = limited }
             }
     }
 }
@@ -88,9 +100,12 @@ struct SearchField: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass").foregroundStyle(Palette.grape)
-            TextField("Find a squishy or fidget", text: $text)
+                .accessibilityHidden(true)
+            TextField("Find a squishy or fidget", text: $text,
+                      prompt: Text("Find a squishy or fidget").foregroundStyle(Palette.inkSoft))
                 .font(.fun(.body, weight: .semibold))
                 .foregroundStyle(Palette.ink)
+                .accessibilityLabel("Find a squishy or fidget")
                 .submitLabel(.search)
                 .accessibilityIdentifier("shelf.search")
             if !text.isEmpty {

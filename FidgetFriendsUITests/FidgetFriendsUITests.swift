@@ -28,14 +28,23 @@ final class FidgetFriendsUITests: XCTestCase {
 
     private func tap(_ id: String, timeout: TimeInterval = 5) {
         let target = element(id)
-        XCTAssertTrue(target.waitForExistence(timeout: timeout), "Missing \(id)")
+        if !id.hasPrefix("builder.") {
+            XCTAssertTrue(target.waitForExistence(timeout: timeout), "Missing \(id)")
+        }
+        reveal(target)
+        XCTAssertTrue(target.exists, "Missing \(id)")
+        target.tap()
+    }
+
+    private func reveal(_ target: XCUIElement) {
         var swipes = 0
         while (!target.isHittable || isCoveredByBottomActions(target)) && swipes < 6 {
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+            let keyboard = app.keyboards.firstMatch
+            let scrollStart = keyboard.exists ? min(0.6, (keyboard.frame.minY - app.frame.minY - 40) / app.frame.height) : 0.6
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: scrollStart))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -220)))
             swipes += 1
         }
-        target.tap()
     }
 
     private func isCoveredByBottomActions(_ target: XCUIElement) -> Bool {
@@ -45,6 +54,8 @@ final class FidgetFriendsUITests: XCTestCase {
             actions = ["shelf.share", "shelf.add"]
         case let id where id.hasPrefix("editor.") && id != "editor.save":
             actions = ["editor.save"]
+        case let id where id.hasPrefix("builder."):
+            actions = ["character.save", "onboarding.finish"]
         default:
             return false
         }
@@ -72,6 +83,7 @@ final class FidgetFriendsUITests: XCTestCase {
         tap("builder.species.cat")
         tap("builder.color.mint")
         tap("builder.eyes.happy")
+        reveal(element("builder.accessory.none"))
         tap("builder.accessory.headphones")
         screenshot("02-character-builder")
         tap("onboarding.finish")
@@ -186,6 +198,228 @@ final class FidgetFriendsUITests: XCTestCase {
         XCTAssertEqual(field.value as? String, "Pip")
     }
 
+    func testSetupResumesWithUnfinishedBuddyAndNoSampleToys() throws {
+        let accessibilitySize = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        launch(["-uiTestReset"] + accessibilitySize)
+        screenshot("after-welcome-AX5")
+        tap("onboarding.start")
+        tap("onboarding.nickname")
+        app.typeText("Juniper")
+        tap("onboarding.samples")
+        tap("onboarding.next")
+        XCTAssertEqual(element("onboarding.progress").label, "Step 3 of 3")
+        XCTAssertEqual(element("builder.surprise").label, "Surprise me")
+        XCTAssertEqual(element("builder.buddyName").label, "Buddy name")
+        tap("builder.species.cat")
+        tap("builder.buddyName")
+        app.typeText(" Jr")
+        let buddy = element("builder.buddyName").value as? String
+        XCTAssertTrue(buddy?.contains("Jr") == true)
+
+        app.terminate()
+        launch(accessibilitySize)
+        reveal(element("builder.buddyName"))
+        XCTAssertTrue(element("builder.buddyName").waitForExistence(timeout: 5))
+        XCTAssertEqual(element("builder.buddyName").value as? String, buddy)
+        XCTAssertTrue(element("builder.species.cat").isSelected)
+        screenshot("after-resumed-builder-AX5")
+        tap("onboarding.buddyBack")
+        XCTAssertEqual(element("onboarding.nickname").value as? String, "Juniper")
+        let samples = element("onboarding.samples")
+        XCTAssertEqual(samples.value as? String, "1")
+        tap("onboarding.samples")
+        tap("onboarding.next")
+        tap("onboarding.finish")
+        XCTAssertTrue(element("shelf.title").waitForExistence(timeout: 5))
+        XCTAssertFalse(element("shelf.share").exists)
+        let add = element("shelf.add")
+        XCTAssertEqual(add.label, "Add my first toy")
+        assertFitsScreen(element("shelf.title"))
+        let summary = element("shelf.counts")
+        assertFitsScreen(summary)
+        XCTAssertLessThan(summary.frame.height, summary.frame.width * 1.2)
+        assertFitsScreen(element("shelf.add"))
+        XCTAssertFalse(app.images.matching(NSPredicate(format: "label == %@", "Search")).firstMatch.exists)
+        for _ in 0..<4 {
+            app.swipeUp()
+            if add.isHittable, app.frame.contains(add.frame) { break }
+        }
+        XCTAssertTrue(add.isHittable)
+        XCTAssertTrue(app.frame.contains(add.frame))
+        XCTAssertFalse(element("shelf.share").exists)
+        screenshot("pr4-after-empty-shelf-AX5")
+        try app.performAccessibilityAudit(for: .sufficientElementDescription)
+
+        open("character", title: "My character")
+        XCTAssertTrue(app.staticTexts["Hi Juniper! Change your buddy any time."].waitForExistence(timeout: 5))
+    }
+
+    func testReplacingFullToyNameKeepsPrefixOfPastedName() {
+        let replacement = "abcdefghijklmnopqrstuvwxyz"
+        app.launchEnvironment["UITEST_TOY_NAME_PASTE"] = replacement
+        launch(["-uiTestReset", "-uiTestSkipOnboarding"])
+        tap("shelf.add")
+        tap("editor.name")
+        let name = element("editor.name")
+        let original = "ABCDEFGHIJKLMNOPQRSTUVWX"
+        name.typeText(original)
+        XCTAssertEqual(name.value as? String, original)
+
+        setTestPasteboard()
+        tap("editor.name")
+        pasteFromEditMenu(in: name, replacingAll: true)
+        XCTAssertEqual(name.value as? String, String(replacement.prefix(24)))
+    }
+
+    func testPastingMultilineToyNameCollapsesWhitespaceBeforeApplyingLimit() {
+        app.launchEnvironment["UITEST_TOY_NAME_PASTE"] = "\n  Squishy\n\n  Bunny \n  With  A  Tiny Hat \n"
+        launch(["-uiTestReset", "-uiTestSkipOnboarding"])
+        tap("shelf.add")
+        setTestPasteboard()
+        tap("editor.name")
+        let name = element("editor.name")
+        pasteFromEditMenu(in: name)
+        XCTAssertEqual(name.value as? String, String("Squishy Bunny With A Tiny Hat".prefix(24)))
+    }
+
+    private func setTestPasteboard() {
+        tap("editor.testPasteboard")
+        XCTAssertEqual(element("editor.testPasteboard").value as? String, "Ready")
+    }
+
+    private func pasteFromEditMenu(in field: XCUIElement, replacingAll: Bool = false) {
+        field.press(forDuration: 0.8)
+        if replacingAll {
+            let selectAll = app.menuItems["Select All"].firstMatch
+            XCTAssertTrue(selectAll.waitForExistence(timeout: 5))
+            selectAll.tap()
+        }
+        let paste = app.menuItems["Paste"].firstMatch
+        XCTAssertTrue(paste.waitForExistence(timeout: 5))
+        paste.tap()
+    }
+
+    func testReturnInsideShortToyNameDoesNotChangeSavedName() {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding"])
+        tap("shelf.add")
+        tap("editor.name")
+        let name = element("editor.name")
+        let original = "SquishyBunny"
+        name.typeText(original)
+        XCTAssertEqual(name.value as? String, original)
+
+        for _ in "Bunny" {
+            name.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
+        }
+        name.typeText("\n")
+        XCTAssertEqual(name.value as? String, original)
+        tap("editor.save")
+        XCTAssertTrue(element("item.card.\(original)").waitForExistence(timeout: 5))
+    }
+
+    func testReturnInsideFullToyNameDoesNotChangeSavedName() {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding",
+                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
+        tap("shelf.add")
+        tap("editor.name")
+        let name = element("editor.name")
+        let original = "ABCDEFGHIJKLMNOPQRSTUVWX"
+        name.typeText(original)
+        XCTAssertEqual(name.value as? String, original)
+
+        name.typeKey(XCUIKeyboardKey.leftArrow.rawValue, modifierFlags: [])
+        name.typeText("\n")
+        XCTAssertEqual(name.value as? String, original)
+        tap("editor.save")
+        XCTAssertTrue(element("item.card.\(original)").waitForExistence(timeout: 5))
+    }
+
+    func testLargestTypePhotoEditorAndLongToyNameFit() {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding",
+                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
+        tap("shelf.add")
+        let photo = element("editor.photo")
+        XCTAssertEqual(photo.label, "Add my photo")
+        assertFitsScreen(photo)
+        XCTAssertLessThan(photo.frame.height, photo.frame.width, "The photo action should wrap into rows of words, not a tall column of letters.")
+        screenshot("after-photo-editor-AX5")
+
+        let name = "Supercalifragilisticexpialidocious"
+        let expected = String(name.prefix(24))
+        tap("editor.name")
+        let nameField = element("editor.name")
+        XCTAssertEqual(nameField.label, "Toy name, optional")
+        let initialHeight = nameField.frame.height
+        app.typeText(name)
+        XCTAssertEqual(nameField.value as? String, expected)
+        XCTAssertGreaterThan(nameField.frame.height, initialHeight)
+        screenshot("pr4-after-editor-name-wrap-AX5")
+        tap("editor.save")
+        tap("shelf.share")
+        XCTAssertTrue(element("share.poster").waitForExistence(timeout: 5))
+        screenshot("pr4-after-long-name-poster-AX5")
+        tap("share.close")
+        tap("item.card.\(expected)")
+        XCTAssertTrue(element("detail.name").waitForExistence(timeout: 5))
+        XCTAssertEqual(element("detail.name").label, expected)
+        assertFitsScreen(element("detail.name"))
+        screenshot("after-long-name-AX5")
+    }
+
+    func testPhotoAndToyDraftStayOpenWhenCollectionWriteRunsOutOfSpace() {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSelectedPhoto", "-uiTestFailCollectionWrite"])
+        tap("shelf.add")
+        XCTAssertEqual(element("editor.photo").label, "Change photo")
+        tap("editor.name")
+        app.typeText("Marshmallow")
+        tap("editor.save")
+        let alert = app.alerts["Couldn't save your toy"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        screenshot("after-low-storage-alert")
+        alert.buttons["OK"].tap()
+        XCTAssertEqual(element("editor.name").value as? String, "Marshmallow")
+        XCTAssertTrue(element("editor.removePhoto").exists)
+        tap("editor.cancel")
+        app.alerts.buttons["Throw away"].tap()
+        XCTAssertFalse(element("item.card.Marshmallow").exists)
+
+        app.terminate()
+        launch([])
+        XCTAssertTrue(element("shelf.title").waitForExistence(timeout: 5))
+        XCTAssertFalse(element("item.card.Marshmallow").exists)
+        tap("shelf.add")
+        tap("editor.name")
+        app.typeText("Marshmallow")
+        tap("editor.save")
+        XCTAssertTrue(element("item.card.Marshmallow").waitForExistence(timeout: 5))
+    }
+
+    func testPhotoWriteFailureLetsYouSaveWithDrawingInstead() {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSelectedPhoto", "-uiTestFailPhotoWrite"])
+        tap("shelf.add")
+        tap("editor.name")
+        app.typeText("Peachy")
+        tap("editor.save")
+        let alert = app.alerts["Couldn't save that photo"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        screenshot("after-photo-write-alert")
+        alert.buttons["OK"].tap()
+        XCTAssertEqual(element("editor.name").value as? String, "Peachy")
+        tap("editor.removePhoto")
+        XCTAssertEqual(element("editor.photo").label, "Add my photo")
+        tap("editor.save")
+        XCTAssertTrue(element("editor.save").waitForNonExistence(timeout: 5))
+        let toy = element("item.card.Peachy")
+        reveal(toy)
+        XCTAssertTrue(toy.waitForExistence(timeout: 5))
+    }
+
+    private func assertFitsScreen(_ target: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(target.exists, file: file, line: line)
+        XCTAssertGreaterThanOrEqual(target.frame.minX, app.frame.minX, file: file, line: line)
+        XCTAssertLessThanOrEqual(target.frame.maxX, app.frame.maxX, file: file, line: line)
+    }
+
     func testFavoriteAndFilterNavigation() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
         XCTAssertTrue(element("shelf.counts").waitForExistence(timeout: 3))
@@ -246,12 +480,43 @@ final class FidgetFriendsUITests: XCTestCase {
     }
 
     func testShareRequiresGrownUpThenOpensShareSheet() {
-        launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"])
+        checkShareRequiresGrownUp()
+    }
+
+    func testShareAtLargestTypeKeepsGateControlsReadable() {
+        checkShareRequiresGrownUp(atLargestType: true)
+    }
+
+    private func checkShareRequiresGrownUp(atLargestType: Bool = false) {
+        let accessibilitySize = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        launch(["-uiTestReset", "-uiTestSkipOnboarding", "-uiTestSeed"] + (atLargestType ? accessibilitySize : []))
         tap("shelf.share")
         XCTAssertTrue(element("share.poster").waitForExistence(timeout: 5))
         screenshot("09-share-preview")
 
         openGate()
+        if atLargestType {
+            let heading = element("gate.heading")
+            let question = element("gate.question")
+            XCTAssertTrue(heading.isHittable)
+            XCTAssertTrue(question.isHittable)
+            let toolbarBottom = app.navigationBars["Share my collection"].frame.maxY
+            XCTAssertGreaterThanOrEqual(heading.frame.minY, toolbarBottom)
+            XCTAssertLessThanOrEqual(heading.frame.minY, toolbarBottom + 24)
+            XCTAssertLessThanOrEqual(question.frame.maxY, app.frame.maxY)
+            screenshot("pr4-after-gate-open-AX5")
+            let back = element("gate.cancel")
+            let check = element("gate.submit")
+            assertFitsScreen(back)
+            assertFitsScreen(check)
+            XCTAssertGreaterThanOrEqual(check.frame.minY, back.frame.maxY)
+            tryAnsweringGate()
+            let activity = app.otherElements["ActivityListView"].firstMatch
+            XCTAssertTrue(activity.waitForExistence(timeout: 8) || shareSheet.waitForExistence(timeout: 2),
+                          "System share sheet did not appear")
+            screenshot("11-system-share-sheet")
+            return
+        }
         screenshot("10-grown-up-gate")
         let firstKey = element("gate.key.1")
         let originalPosition = firstKey.frame.minY

@@ -2,11 +2,11 @@ import SwiftUI
 
 struct OnboardingView: View {
     @EnvironmentObject private var store: AppStore
-    @State private var step = 0
-    @State private var nickname = ""
-    @State private var buddyName = ""
-    @State private var look = CharacterLook()
-    @State private var addSamples = false
+    @State private var saveFailed = false
+    @AccessibilityFocusState private var progressFocused: Bool
+    @ScaledMetric(relativeTo: .largeTitle) private var titleSize = 46
+
+    private var step: Int { store.setupDraft.step }
 
     var body: some View {
         ZStack {
@@ -24,6 +24,7 @@ struct OnboardingView: View {
                 .frame(maxWidth: 640)
                 .frame(maxWidth: .infinity)
             }
+            .id(step)
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
                 if step == 2 {
@@ -31,7 +32,12 @@ struct OnboardingView: View {
                 }
             }
         }
-        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: step)
+        .onChange(of: step) { _, _ in progressFocused = true }
+        .alert("Couldn't save your setup", isPresented: $saveFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Free up some space, then try again.")
+        }
     }
 
     private var progress: some View {
@@ -44,6 +50,9 @@ struct OnboardingView: View {
         }
         .accessibilityElement()
         .accessibilityLabel("Step \(step + 1) of 3")
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityFocused($progressFocused)
+        .accessibilityIdentifier("onboarding.progress")
     }
 
     private var welcome: some View {
@@ -54,7 +63,8 @@ struct OnboardingView: View {
                 CritterView(species: .frog, color: .mint, eyes: .dots, mouth: .tongue).frame(width: 120)
             }
             Text("Fidget Friends")
-                .font(.system(size: 46, weight: .black, design: .rounded))
+                .font(.system(size: titleSize, weight: .black, design: .rounded))
+                .multilineTextAlignment(.center)
                 .foregroundStyle(LinearGradient(colors: [Palette.grape, Palette.coralDeep], startPoint: .leading, endPoint: .trailing))
             Text("Catalog every squishy and fidget you love, then make a happy picture of your shelf!")
                 .font(.fun(.title3, weight: .semibold))
@@ -63,7 +73,7 @@ struct OnboardingView: View {
             Label("No accounts. The app never uploads your collection.", systemImage: "lock.fill")
                 .font(.fun(.footnote))
                 .foregroundStyle(Palette.grape)
-            Button { step = 1 } label: {
+            Button { store.setupDraft.step = 1 } label: {
                 Label("Make my buddy", systemImage: "arrow.right")
             }
             .buttonStyle(.chunky)
@@ -80,22 +90,22 @@ struct OnboardingView: View {
             Text("Add a nickname or keep going. Shared pictures leave it out. Your device may back up app data.")
                 .font(.fun(.body, weight: .semibold))
                 .foregroundStyle(Palette.inkSoft)
-            FunTextField(placeholder: "Nickname (optional)", text: $nickname, maxLength: 16)
+            FunTextField(placeholder: "Nickname (optional)", text: $store.setupDraft.nickname, maxLength: 16)
                 .textContentType(.nickname)
                 .accessibilityIdentifier("onboarding.nickname")
-            Toggle(isOn: $addSamples) {
+            Toggle(isOn: $store.setupDraft.addSamples) {
                 Text("Start with a few example toys").font(.fun(.headline)).foregroundStyle(Palette.ink)
             }
             .tint(Palette.mintDeep)
             .padding(16)
             .stickerCard()
             .accessibilityIdentifier("onboarding.samples")
-            Button { step = 2 } label: {
+            Button { store.setupDraft.step = 2 } label: {
                 Label("Next", systemImage: "arrow.right")
             }
             .buttonStyle(.chunky)
             .accessibilityIdentifier("onboarding.next")
-            Button("Back") { step = 0 }
+            Button("Back") { store.setupDraft.step = 0 }
                 .font(.fun(.headline))
                 .frame(maxWidth: .infinity)
         }
@@ -106,22 +116,23 @@ struct OnboardingView: View {
             Text("Make your buddy!")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
-            CharacterBuilder(look: $look, buddyName: $buddyName)
+            CharacterBuilder(look: $store.setupDraft.look, buddyName: $store.setupDraft.buddyName)
         }
     }
 
     private var buildActions: some View {
         HStack(spacing: 12) {
-            Button { step = 1 } label: {
+            Button { store.setupDraft.step = 1 } label: {
                 Image(systemName: "chevron.left")
                     .accessibilityLabel("Back")
             }
             .buttonStyle(.chunky(.white, shadow: Palette.lilac, foreground: Palette.grape, fullWidth: false))
+            .accessibilityIdentifier("onboarding.buddyBack")
 
             Button { finish() } label: {
                 Label("To my shelf", systemImage: "checkmark")
             }
-            .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep))
+            .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep, foreground: Palette.ink))
             .accessibilityIdentifier("onboarding.finish")
         }
         .padding(.horizontal, 24)
@@ -132,13 +143,12 @@ struct OnboardingView: View {
     }
 
     private func finish() {
-        if addSamples && store.items.isEmpty {
-            CollectionItem.samples.forEach(store.add)
-        }
-        store.profile = Profile(
-            nickname: nickname.trimmingCharacters(in: .whitespacesAndNewlines),
-            buddyName: Profile.resolvedBuddyName(buddyName),
-            look: look
+        let draft = store.setupDraft
+        let profile = Profile(
+            nickname: draft.nickname.trimmingCharacters(in: .whitespacesAndNewlines),
+            buddyName: Profile.resolvedBuddyName(draft.buddyName),
+            look: draft.look
         )
+        saveFailed = !store.saveProfile(profile, addSamples: draft.addSamples)
     }
 }

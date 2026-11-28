@@ -87,6 +87,9 @@ struct PhoneMainView: View {
                     }
                 }
                 .tabItem { Label(section.title, systemImage: section.systemImage) }
+                .toolbarBackground(Palette.cream, for: .tabBar)
+                .toolbarBackground(.visible, for: .tabBar)
+                .toolbarColorScheme(.light, for: .tabBar)
                 .tag(section)
             }
         }
@@ -95,6 +98,7 @@ struct PhoneMainView: View {
 
 struct WideMainView: View {
     @EnvironmentObject private var store: AppStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Binding var section: AppSection
     let onAddToy: () -> Void
     @State private var selection: UUID?
@@ -102,7 +106,7 @@ struct WideMainView: View {
     var body: some View {
         GeometryReader { geo in
             let sidebarWidth: CGFloat = geo.size.width > 1100 ? 270 : 230
-            let showsPanel = geo.size.width - sidebarWidth >= 760
+            let showsPanel = !dynamicTypeSize.isAccessibilitySize && geo.size.width - sidebarWidth >= 760
             HStack(spacing: 0) {
                 WideSidebar(section: $section)
                     .frame(width: sidebarWidth)
@@ -131,9 +135,22 @@ struct WideMainView: View {
 
 private struct WideSidebar: View {
     @EnvironmentObject private var store: AppStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Binding var section: AppSection
 
     var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView { content }
+            } else {
+                content
+            }
+        }
+        .frame(maxHeight: .infinity)
+        .background(LinearGradient(colors: [Palette.lilac, Color(hex: 0xE4D3FF)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 if let look = store.profile?.look { BuddyAvatar(look: look, size: 48) }
@@ -179,8 +196,6 @@ private struct WideSidebar: View {
                 .foregroundStyle(Palette.grape)
         }
         .padding(20)
-        .frame(maxHeight: .infinity)
-        .background(LinearGradient(colors: [Palette.lilac, Color(hex: 0xE4D3FF)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
     }
 }
 

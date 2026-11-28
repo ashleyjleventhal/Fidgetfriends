@@ -5,6 +5,7 @@ struct CharacterBuilder: View {
     @Binding var look: CharacterLook
     @Binding var buddyName: String
     @State private var bounce = false
+    @ScaledMetric(relativeTo: .caption) private var optionWidth = 88.0
 
     var body: some View {
         VStack(spacing: 20) {
@@ -56,32 +57,32 @@ struct CharacterBuilder: View {
             VStack(alignment: .leading, spacing: 8) {
                 SectionLabel(text: "Name your buddy", trailing: "Optional")
                 FunTextField(placeholder: Profile.defaultBuddyName, text: $buddyName, maxLength: 16)
+                    .accessibilityLabel("Buddy name")
                     .accessibilityIdentifier("builder.buddyName")
             }
         }
     }
 
     private var preview: some View {
-        ZStack {
-            Circle()
-                .fill(RadialGradient(colors: [.white, look.color.pastel], center: .center, startRadius: 10, endRadius: 140))
-                .frame(width: 230, height: 230)
-            SparkleSprinkles(color: Palette.coral).frame(width: 270, height: 250)
-            CritterView(look: look)
-                .frame(width: 190, height: 190)
-                .scaleEffect(bounce ? 1.08 : 1)
-        }
-        .frame(maxWidth: .infinity)
-        .overlay(alignment: .bottomTrailing) {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(RadialGradient(colors: [.white, look.color.pastel], center: .center, startRadius: 10, endRadius: 140))
+                    .frame(width: 230, height: 230)
+                SparkleSprinkles(color: Palette.coral).frame(width: 270, height: 250)
+                CritterView(look: look)
+                    .frame(width: 190, height: 190)
+                    .scaleEffect(bounce ? 1.08 : 1)
+            }
+            .accessibilityHidden(true)
             Button { pick { look = .random() } } label: {
                 Label("Surprise me", systemImage: "dice.fill")
             }
-            .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep, fullWidth: false))
+            .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep, foreground: Palette.ink, fullWidth: false))
             .controlSize(.small)
             .accessibilityIdentifier("builder.surprise")
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Your buddy preview")
+        .frame(maxWidth: .infinity)
     }
 
     private func pick(_ change: () -> Void) {
@@ -105,9 +106,9 @@ struct CharacterBuilder: View {
                         Button { pick { set(option) } } label: {
                             VStack(spacing: 4) {
                                 preview(option).frame(width: 66, height: 66)
-                                Text(label(option)).font(.fun(.caption)).foregroundStyle(Palette.ink).lineLimit(1)
+                                Text(label(option)).font(.fun(.caption)).foregroundStyle(Palette.ink).multilineTextAlignment(.center)
                             }
-                            .frame(width: 88)
+                            .frame(width: optionWidth)
                             .padding(.vertical, 8)
                             .stickerCard(radius: 20, selected: option == selected)
                         }

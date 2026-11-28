@@ -6,6 +6,7 @@ struct CharacterScreen: View {
     @State private var buddyName = ""
     @State private var nickname = ""
     @State private var savedBanner = false
+    @State private var saveFailed = false
 
     private var hasChanges: Bool {
         guard let profile = store.profile else { return false }
@@ -51,6 +52,11 @@ struct CharacterScreen: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .onAppear(perform: load)
+        .alert("Couldn't save your buddy", isPresented: $saveFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Free up some space, then try again.")
+        }
     }
 
     private func load() {
@@ -65,7 +71,10 @@ struct CharacterScreen: View {
         profile.look = look
         profile.buddyName = Profile.resolvedBuddyName(buddyName)
         profile.nickname = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
-        store.profile = profile
+        guard store.saveProfile(profile) else {
+            saveFailed = true
+            return
+        }
         buddyName = profile.buddyName
         nickname = profile.nickname
         savedBanner = true

@@ -29,7 +29,7 @@ final class FidgetFriendsTests: XCTestCase {
 
     func testProfileAndItemsPersistAcrossStores() {
         let store = AppStore(directory: directory)
-        store.profile = Profile(nickname: "Kai", buddyName: "Bloop", look: CharacterLook(species: .frog, color: .mint, eyes: .happy, mouth: .grin, accessory: .headphones, cheeks: false))
+        XCTAssertTrue(store.saveProfile(Profile(nickname: "Kai", buddyName: "Bloop", look: CharacterLook(species: .frog, color: .mint, eyes: .happy, mouth: .grin, accessory: .headphones, cheeks: false))))
         let item = CollectionItem(name: "Marshmallow", kind: .squishy, species: .bunny, color: .sky, tags: [.soft], notes: "secret")
         store.add(item)
         store.toggleFavorite(item.id)

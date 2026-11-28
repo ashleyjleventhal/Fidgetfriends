@@ -9,6 +9,8 @@ struct ItemEditorView: View {
 
     @EnvironmentObject private var store: AppStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var optionWidth = 90.0
     let mode: Mode
 
     @State private var original: CollectionItem
@@ -18,8 +20,15 @@ struct ItemEditorView: View {
     @State private var removePhoto = false
     @State private var photoState: PhotoState = .idle
     @State private var confirmingDiscard = false
+    @State private var saveError: SaveError?
 
     private enum PhotoState: Equatable { case idle, loading, failed(String) }
+    private enum SaveError: String, Identifiable {
+        case photo = "Couldn't save that photo"
+        case toy = "Couldn't save your toy"
+
+        var id: String { rawValue }
+    }
 
     init(mode: Mode) {
         self.mode = mode
@@ -32,6 +41,11 @@ struct ItemEditorView: View {
         }
         _original = State(initialValue: item)
         _draft = State(initialValue: item)
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-uiTestSelectedPhoto") {
+            _pickedPhoto = State(initialValue: UIImage(named: "ArtPeachy"))
+        }
+        #endif
     }
 
     /// Starter artwork shows only while the toy still has its original kind, look and color.
@@ -65,7 +79,7 @@ struct ItemEditorView: View {
                     previewCard
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel(text: "It's a…")
-                        HStack(spacing: 10) {
+                        FlowLayout(spacing: 10) {
                             ForEach(ItemKind.allCases) { kind in
                                 FunChip(title: kind.label, systemImage: kind == .squishy ? "cloud.fill" : "circle.grid.3x3.fill", isOn: draft.kind == kind,
                                         color: kind == .squishy ? Palette.coralDeep : Palette.skyDeep) {
@@ -81,14 +95,16 @@ struct ItemEditorView: View {
                     colorPicker
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel(text: "Name", trailing: "Optional")
-                        FunTextField(placeholder: draft.species.label, text: $draft.name)
+                        FunTextField(placeholder: draft.species.label, text: $draft.name, axis: .vertical)
                             .accessibilityLabel("Toy name, optional")
                             .accessibilityIdentifier("editor.name")
                     }
                     tagPicker
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel(text: "Private notes", trailing: "Never in shared pictures")
-                        TextField("Where did you get it? What's it like?", text: $draft.notes, axis: .vertical)
+                        TextField("Private notes", text: $draft.notes,
+                                  prompt: Text("Where did you get it? What's it like?").foregroundStyle(Palette.inkSoft), axis: .vertical)
+                            .foregroundStyle(Palette.ink)
                             .lineLimit(3...6)
                             .font(.fun(.body, weight: .medium))
                             .padding(16)
@@ -128,6 +144,13 @@ struct ItemEditorView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", action: cancel).font(.fun(.body)).accessibilityIdentifier("editor.cancel")
                 }
+                #if DEBUG
+                if let pasteText = ProcessInfo.processInfo.environment["UITEST_TOY_NAME_PASTE"] {
+                    ToolbarItem(placement: .primaryAction) {
+                        TestPasteboardButton(text: pasteText)
+                    }
+                }
+                #endif
             }
             .onChange(of: photoSelection) { _, newValue in
                 guard let newValue else { return }
@@ -151,6 +174,11 @@ struct ItemEditorView: View {
             Button("Keep editing", role: .cancel) {}
             Button("Throw away", role: .destructive) { dismiss() }
         }
+        .alert(item: $saveError) { error in
+            Alert(title: Text(error.rawValue),
+                  message: Text(error == .photo ? "Free up some space and try again, or use the drawing instead." : "Free up some space, then try again. Your changes are still here."),
+                  dismissButton: .default(Text("OK")))
+        }
     }
 
     private func cancel() {
@@ -158,13 +186,18 @@ struct ItemEditorView: View {
     }
 
     private var previewCard: some View {
-        HStack(spacing: 16) {
+        let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16)) : AnyLayout(HStackLayout(spacing: 16))
+        return layout {
             ItemThumbnail(item: draft, photo: previewPhoto)
                 .frame(width: 130, height: 130)
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             VStack(alignment: .leading, spacing: 10) {
                 PhotosPicker(selection: $photoSelection, matching: .images, photoLibrary: .shared()) {
-                    Label(previewPhoto == nil ? "Add my photo" : "Change photo", systemImage: "photo.on.rectangle.angled")
+                    if dynamicTypeSize.isAccessibilitySize {
+                        Text(previewPhoto == nil ? "Add my photo" : "Change photo")
+                    } else {
+                        Label(previewPhoto == nil ? "Add my photo" : "Change photo", systemImage: "photo.on.rectangle.angled")
+                    }
                 }
                 .buttonStyle(.chunky(Palette.sunshine, shadow: Palette.sunshineDeep, foreground: Palette.ink, fullWidth: false))
                 .accessibilityIdentifier("editor.photo")
@@ -216,9 +249,9 @@ struct ItemEditorView: View {
                         } label: {
                             VStack(spacing: 4) {
                                 CritterView(species: species, color: draft.color, showsShadow: false).frame(width: 60, height: 60)
-                                Text(species.label).font(.fun(.caption)).foregroundStyle(Palette.ink).lineLimit(1)
+                                Text(species.label).font(.fun(.caption)).foregroundStyle(Palette.ink).multilineTextAlignment(.center)
                             }
-                            .frame(width: 90)
+                            .frame(width: optionWidth)
                             .padding(.vertical, 8)
                             .stickerCard(radius: 20, selected: draft.species == species)
                         }
@@ -274,19 +307,41 @@ struct ItemEditorView: View {
     private func save() {
         var item = draft
         item.name = resolvedName
+        var newPhotoName: String?
         if let pickedPhoto {
             guard let name = store.savePhoto(pickedPhoto) else {
-                photoState = .failed("Couldn't save that photo. Try again or use the drawing.")
+                saveError = .photo
                 return
             }
+            newPhotoName = name
             item.photoFileName = name
         } else if removePhoto {
             item.photoFileName = nil
         }
-        if isEditing { store.update(item) } else { store.add(item) }
+        guard isEditing ? store.update(item) : store.add(item) else {
+            if let newPhotoName { store.deletePhoto(named: newPhotoName) }
+            saveError = .toy
+            return
+        }
         dismiss()
     }
 }
+
+#if DEBUG
+private struct TestPasteboardButton: View {
+    let text: String
+    @State private var isReady = false
+
+    var body: some View {
+        Button("Set test clipboard") {
+            UIPasteboard.general.string = text
+            isReady = UIPasteboard.general.string == text
+        }
+        .accessibilityIdentifier("editor.testPasteboard")
+        .accessibilityValue(isReady ? "Ready" : "Not ready")
+    }
+}
+#endif
 
 private struct SheetDismissObserver: UIViewControllerRepresentable {
     let isDirty: Bool

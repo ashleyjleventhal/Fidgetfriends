@@ -3,6 +3,7 @@ import SwiftUI
 struct ShelfScreen: View {
     @EnvironmentObject private var store: AppStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let favoritesOnly: Bool
     /// When set (wide iPad), tapping a toy selects it for the side panel instead of pushing a page.
     var selection: Binding<UUID?>?
@@ -79,7 +80,7 @@ struct ShelfScreen: View {
                     .foregroundStyle(Palette.ink.opacity(0.8))
             }
             Spacer(minLength: 0)
-            if let look = store.profile?.look {
+            if !dynamicTypeSize.isAccessibilitySize, let look = store.profile?.look {
                 CritterView(look: look).frame(width: 92, height: 92)
             }
         }
@@ -112,7 +113,7 @@ struct ShelfScreen: View {
         } else if visible.isEmpty {
             emptyState(title: favoritesOnly ? "No faves yet" : "No matches", message: favoritesOnly ? "Tap the heart on a toy to make it a fave." : "Try another word or filter.")
         } else {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: horizontalSizeClass == .regular ? 170 : 148), spacing: 16)], spacing: 16) {
+            LazyVGrid(columns: [GridItem(dynamicTypeSize.isAccessibilitySize ? .flexible() : .adaptive(minimum: horizontalSizeClass == .regular ? 170 : 148), spacing: 16)], spacing: 16) {
                 ForEach(visible) { item in
                     card(for: item)
                 }
@@ -189,31 +190,33 @@ struct ShelfScreen: View {
         .padding(.bottom, 8)
         .frame(maxWidth: 900)
         .frame(maxWidth: .infinity)
-        .background(LinearGradient(colors: [Palette.cream.opacity(0), Palette.cream.opacity(0.95), Palette.cream], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+        .background(Palette.cream)
     }
 
+    @ViewBuilder
     private var shareButton: some View {
-        Button { showingShare = true } label: {
-            Label("Share my collection", systemImage: "square.and.arrow.up")
-                .fixedSize(horizontal: false, vertical: true)
+        if !store.items.isEmpty {
+            Button { showingShare = true } label: {
+                Label("Share my collection", systemImage: "square.and.arrow.up")
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .buttonStyle(.chunky(Palette.grape, shadow: Palette.grapeDeep, compact: true))
+            .accessibilityIdentifier("shelf.share")
+            .accessibilityHint("Makes a picture of your toys to send with a grown-up's help")
         }
-        .buttonStyle(.chunky(Palette.grape, shadow: Palette.grapeDeep, compact: true))
-        .disabled(store.items.isEmpty)
-        .accessibilityIdentifier("shelf.share")
-        .accessibilityHint("Makes a picture of your toys to send with a grown-up's help")
     }
 
     private var addButton: some View {
         Button(action: onAddToy) {
-            Label("Add toy", systemImage: "plus").lineLimit(1).fixedSize()
+            Label("Add toy", systemImage: "plus")
         }
         .buttonStyle(.chunky(.white, shadow: Palette.lilac, foreground: Palette.grape, compact: true))
-        .accessibilityLabel("Add a squishy")
         .accessibilityIdentifier("shelf.add")
     }
 }
 
 struct ItemCard: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let item: CollectionItem
     var photo: UIImage?
     var isSelected = false
@@ -237,11 +240,11 @@ struct ItemCard: View {
                 Text(item.name)
                     .font(.fun(.headline, weight: .heavy))
                     .foregroundStyle(Palette.ink)
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                 Text(item.subtitle)
                     .font(.fun(.caption, weight: .semibold))
                     .foregroundStyle(Palette.inkSoft)
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             }
             .padding(.horizontal, 4)
         }

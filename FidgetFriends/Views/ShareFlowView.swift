@@ -105,7 +105,7 @@ struct ShareFlowView: View {
         Button { withAnimation { showingGate = true } } label: {
             Label("Ask a grown-up to send it", systemImage: "person.2.fill")
         }
-        .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep))
+        .buttonStyle(.chunky(Palette.coral, shadow: Palette.coralDeep, foreground: Palette.ink))
         .disabled(poster == nil)
         .accessibilityIdentifier("share.continue")
     }
@@ -230,12 +230,14 @@ struct SharePoster: View {
                     ForEach(items) { item in
                         VStack(spacing: 6) {
                             ItemThumbnail(item: item, photo: photos[item.id])
-                                .frame(height: items.count > 9 ? 92 : 120)
+                                .frame(height: items.count > 9 ? 72 : 120)
                                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                             Text(item.name)
                                 .font(.system(size: 16, weight: .heavy, design: .rounded))
                                 .foregroundStyle(Palette.ink)
-                                .lineLimit(1)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.7)
+                                .multilineTextAlignment(.center)
                         }
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(.white))
@@ -263,6 +265,7 @@ struct SharePoster: View {
 
 /// A grown-up check before anything leaves the app. This is a speed bump for young kids, not legal consent.
 struct ParentGateView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var onPass: () -> Void
     var onCancel: () -> Void
 
@@ -273,33 +276,50 @@ struct ParentGateView: View {
     @State private var wrong = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            ViewThatFits(in: .vertical) {
-                fields(compact: false)
-                fields(compact: true)
-                ScrollView {
+        if dynamicTypeSize.isAccessibilitySize {
+            ScrollView {
+                VStack(spacing: 12) {
                     fields(compact: true)
-                        .frame(maxWidth: .infinity)
+                    actions
                 }
+                .frame(maxWidth: 420)
+                .padding(20)
+                .frame(maxWidth: .infinity)
             }
-            actions
-                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            VStack(spacing: 12) {
+                ViewThatFits(in: .vertical) {
+                    fields(compact: false)
+                    fields(compact: true)
+                    ScrollView {
+                        fields(compact: true)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                actions
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: 420)
+            .padding(20)
         }
-        .frame(maxWidth: 420)
-        .padding(20)
     }
 
     private func fields(compact: Bool) -> some View {
         let badgeSize: CGFloat = compact ? 56 : 84
         return VStack(spacing: compact ? 10 : 18) {
-            Image(systemName: "person.2.fill")
-                .font(.system(size: compact ? 28 : 40, weight: .bold))
-                .foregroundStyle(Palette.grape)
-                .frame(width: badgeSize, height: badgeSize)
-                .background(Circle().fill(Palette.lilac))
+            if !dynamicTypeSize.isAccessibilitySize {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: compact ? 28 : 40, weight: .bold))
+                    .foregroundStyle(Palette.grape)
+                    .frame(width: badgeSize, height: badgeSize)
+                    .background(Circle().fill(Palette.lilac))
+                    .accessibilityHidden(true)
+            }
             Text("Grown-ups only")
                 .font(.fun(.largeTitle, weight: .black))
                 .foregroundStyle(Palette.ink)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("gate.heading")
             ZStack {
                 Text("A grown-up must answer before the share sheet opens.")
                     .foregroundStyle(Palette.inkSoft)
@@ -332,7 +352,8 @@ struct ParentGateView: View {
     }
 
     private var actions: some View {
-        HStack(spacing: 12) {
+        let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))
+        return layout {
             Button("Back", action: onCancel)
                 .buttonStyle(.chunky(.white, shadow: Palette.lilac, foreground: Palette.grape))
                 .accessibilityIdentifier("gate.cancel")
@@ -346,22 +367,27 @@ struct ParentGateView: View {
     private func keypad(compact: Bool) -> some View {
         let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", ""]
         let keyHeight: CGFloat = compact ? 48 : 60
-        return LazyVGrid(columns: Array(repeating: GridItem(.fixed(76), spacing: 12), count: 3), spacing: compact ? 8 : 12) {
-            ForEach(Array(keys.enumerated()), id: \.offset) { _, key in
-                if key.isEmpty {
-                    Color.clear.frame(height: keyHeight)
-                } else {
-                    Button {
-                        if key == "⌫" { entry = String(entry.dropLast()) } else if entry.count < 3 { entry += key }
-                    } label: {
-                        Text(key).font(.fun(.title2, weight: .heavy)).frame(width: 76, height: keyHeight)
-                            .foregroundStyle(Palette.ink)
-                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white))
-                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Palette.lilac, lineWidth: 2))
+        return Grid(horizontalSpacing: 12, verticalSpacing: compact ? 8 : 12) {
+            ForEach(0..<4) { row in
+                GridRow {
+                    ForEach(0..<3) { column in
+                        let key = keys[row * 3 + column]
+                        if key.isEmpty {
+                            Color.clear.frame(width: 76, height: keyHeight)
+                        } else {
+                            Button {
+                                if key == "⌫" { entry = String(entry.dropLast()) } else if entry.count < 3 { entry += key }
+                            } label: {
+                                Text(key).font(.fun(.title2, weight: .heavy)).frame(width: 76, height: keyHeight)
+                                    .foregroundStyle(Palette.ink)
+                                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white))
+                                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Palette.lilac, lineWidth: 2))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(key == "⌫" ? "Delete" : key)
+                            .accessibilityIdentifier("gate.key.\(key == "⌫" ? "delete" : key)")
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(key == "⌫" ? "Delete" : key)
-                    .accessibilityIdentifier("gate.key.\(key == "⌫" ? "delete" : key)")
                 }
             }
         }
