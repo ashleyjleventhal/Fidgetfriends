@@ -5,7 +5,7 @@ async function start(page: import('@playwright/test').Page, samples = true) {
   await expect(page.getByRole('heading', { name: 'Let’s make a little friend' })).toBeVisible();
   await page.getByLabel('Buddy’s name').fill('Bubbles');
   await page.getByLabel('Your nickname').fill('PRIVATE NICKNAME');
-  if (!samples) await page.getByLabel('Start with 7 pretend toys').uncheck();
+  if (!samples) await page.getByRole('button', { name: 'Empty shelf', exact: true }).click();
   await page.getByRole('button', { name: 'Meet my happy shelf' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
 }
@@ -22,10 +22,14 @@ test('makes a buddy and first toys without typing, then finds the grown-up gate'
   expect((await mint.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await press(mint);
   await expect(mint).toHaveAttribute('aria-pressed', 'true');
-  await press(dialog.getByText('Start with 7 pretend toys to explore', { exact: true }));
+  const emptyShelf = dialog.getByRole('button', { name: 'Empty shelf', exact: true });
+  await expect(emptyShelf).toBeInViewport({ ratio: 1 });
+  await press(emptyShelf.locator('svg').first());
+  await expect(emptyShelf).toHaveAttribute('aria-pressed', 'true');
   await press(finishBuddy);
   await expect(dialog).not.toBeVisible();
   await expect(page.getByText('You + Pip')).toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(0);
 
   const mobile = page.getByRole('navigation', { name: 'Mobile navigation' });
   const isMobile = await mobile.isVisible();
@@ -57,6 +61,17 @@ test('makes a buddy and first toys without typing, then finds the grown-up gate'
   await expect(dialog.getByRole('heading', { name: 'A little help from a grown-up' })).toBeVisible();
   await expect(dialog.getByRole('img', { name: /Collection picture/ })).toHaveCount(0);
 });
+test('starts with seven pretend toys if the illustrated shelf choice is left alone', async ({ page, hasTouch }) => {
+  await page.goto('/');
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: '7 pretend toys', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(dialog.getByRole('button', { name: 'Empty shelf', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  const finish = dialog.getByRole('button', { name: 'Meet my happy shelf' });
+  if (hasTouch) await finish.tap();
+  else await finish.click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(7);
+});
 test('scrolls and saves a buddy in a very short landscape viewport', async ({ page, hasTouch }) => {
   await page.setViewportSize({ width: 320, height: 160 });
   await page.goto('/');
@@ -69,6 +84,17 @@ test('scrolls and saves a buddy in a very short landscape viewport', async ({ pa
   if (hasTouch) await finish.tap();
   else await finish.click();
   await expect(dialog).not.toBeVisible();
+});
+test('draws frog eyes above its face instead of bear ears', async ({ page }) => {
+  await page.goto('/');
+  const dialog = page.getByRole('dialog');
+  const frog = dialog.getByRole('button', { name: 'Frog', exact: true });
+  const bear = dialog.getByRole('button', { name: 'Bear', exact: true });
+  const eyesAboveFace = 'svg ellipse[cy="55"]';
+  await expect(frog.locator(eyesAboveFace)).toHaveCount(2);
+  await expect(bear.locator(eyesAboveFace)).toHaveCount(0);
+  await expect(frog.locator('svg circle')).toHaveCount(0);
+  await expect(bear.locator('svg circle')).toHaveCount(2);
 });
 test('gives Other squishy different artwork from Mochi blob', async ({ page }) => {
   await start(page, false);
