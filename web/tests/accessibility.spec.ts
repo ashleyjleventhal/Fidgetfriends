@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
 async function finishSetup(page: Page, samples = true) {
-  if (!samples) await page.getByLabel('Start with 7 pretend toys').uncheck();
+  if (!samples) await page.getByRole('button', { name: 'Empty shelf', exact: true }).click();
   await page.getByRole('button', { name: 'Meet my happy shelf' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
 }
@@ -38,11 +38,11 @@ test('reloading in the middle of setup keeps the choices made so far', async ({ 
   await page.goto('/');
   await page.getByRole('button', { name: 'Kitty' }).click();
   await page.getByLabel('Buddy’s name').fill('Whiskers');
-  await page.getByLabel('Start with 7 pretend toys').uncheck();
+  await page.getByRole('button', { name: 'Empty shelf', exact: true }).click();
   await page.reload();
   await expect(page.getByLabel('Buddy’s name')).toHaveValue('Whiskers');
   await expect(page.getByRole('button', { name: 'Kitty' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByLabel('Start with 7 pretend toys')).not.toBeChecked();
+  await expect(page.getByRole('button', { name: 'Empty shelf', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Meet my happy shelf' }).click();
   await expect(page.getByText('You + Whiskers')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Your first little joy goes here' })).toBeVisible();
