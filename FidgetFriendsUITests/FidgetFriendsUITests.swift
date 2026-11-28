@@ -155,6 +155,34 @@ final class FidgetFriendsUITests: XCTestCase {
         XCTAssertTrue(element("builder.color.mint").isSelected)
     }
 
+    func testKindChipsStayAboveLooksLikeHeading() {
+        assertKindChipsStayAboveLooksLikeHeading(contentSize: "UICTContentSizeCategoryL")
+    }
+
+    func testKindChipsStayAboveLooksLikeHeadingAtLargestDynamicTypeSize() {
+        assertKindChipsStayAboveLooksLikeHeading(contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
+    }
+
+    private func assertKindChipsStayAboveLooksLikeHeading(contentSize: String) {
+        launch(["-uiTestReset", "-uiTestSkipOnboarding", "-UIPreferredContentSizeCategoryName", contentSize])
+        tap("shelf.add")
+
+        let heading = app.staticTexts["Looks like"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5))
+        reveal(heading)
+        screenshot("kind-chips-\(contentSize)")
+        let headingFrame = heading.frame
+        XCTAssertFalse(headingFrame.isEmpty)
+        for kind in ["squishy", "fidget"] {
+            let chip = app.buttons["editor.kind.\(kind)"]
+            XCTAssertTrue(chip.exists)
+            let chipFrame = chip.frame
+            XCTAssertFalse(chipFrame.isEmpty)
+            XCTAssertFalse(chipFrame.intersects(headingFrame), "\(kind) chip overlaps the Looks like heading")
+            XCTAssertLessThanOrEqual(chipFrame.maxY, headingFrame.minY, "\(kind) chip must be above the Looks like heading")
+        }
+    }
+
     func testAddedToyPersistsAfterRelaunch() {
         launch(["-uiTestReset", "-uiTestSkipOnboarding"])
         tap("shelf.add")
